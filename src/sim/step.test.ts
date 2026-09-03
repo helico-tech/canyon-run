@@ -6,6 +6,7 @@ import { KEY, ZERO_INPUT } from './input.ts';
 import { basis } from './quat.ts';
 import { checksum, cloneState, createState } from './state.ts';
 import { createPilot } from './pilot.ts';
+import { FieldSampler, spineAt } from '../terrain/field.ts';
 import { step, StepScratch } from './step.ts';
 
 const b = new Float64Array(9);
@@ -167,3 +168,82 @@ test('crossing a segment boundary pays the gate bonus once and raises the speed 
   expect(speedFloor(1)).toBe(54);
   expect(speedFloor(99)).toBe(90);
 });
+
+/** Finds a point near the wall at the given distance band, flying level along +z. */
+function pointNearRock(
+  seed: number,
+  minDist: number,
+  maxDist: number,
+): { x: number; y: number; z: number } {
+  const sampler = new FieldSampler(seed);
+  for (let z = 100; z < 1000; z += 3) {
+    const sp = spineAt(seed, z);
+    sampler.prepare(sp.cx - 60, sp.cx + 60, z - 10, z + 10);
+    for (let x = sp.cx; x < sp.cx + sp.hw; x += 0.5) {
+      const d = -sampler.density(x, sp.coreY, z);
+      if (d > minDist && d < maxDist) return { x, y: sp.coreY, z };
+    }
+  }
+  throw new Error('no point found');
+}
+
+test('a close pass that ends pays CLOSE or SO CLOSE once, then cools down', () => {
+  const seed = 1;
+  const s = createState(seed);
+  const ghost = new StepScratch(seed, { ghost: true });
+  s.throttle = 1;
+  s.speed = 160;
+  const p = pointNearRock(seed, 1.7, 2.5);
+  s.x = p.x;
+  s.y = p.y;
+  s.z = p.z;
+  // Hold the plane in the close band for the minimum number of ticks (teleport back each tick).
+  for (let i = 0; i < C.CLOSE_MIN_TICKS + 1; i++) {
+    step(s, ZERO_INPUT, ghost);
+    s.x = p.x;
+    s.y = p.y;
+    s.z = p.z;
+    s.speed = 160;
+  }
+  expect(s.closeTicks).toBeGreaterThanOrEqual(C.CLOSE_MIN_TICKS);
+  // Leave to open air: the pass ends and the event fires.
+  const sp = spineAt(seed, p.z);
+  s.x = sp.cx;
+  s.y = sp.coreY;
+  const before = s.score;
+  step(s, ZERO_INPUT, ghost);
+  expect([1, 2]).toContain(s.eventId);
+  expect(s.score - before).toBeGreaterThanOrEqual(C.CLOSE_BONUS);
+  expect(s.cooldown).toBe(C.EVENT_COOLDOWN);
+  const evTick = s.eventTick;
+  // Cooldown blocks a second event immediately after.
+  s.x = p.x;
+  s.y = p.y;
+  s.z = p.z;
+  for (let i = 0; i < C.CLOSE_MIN_TICKS + 1; i++) {
+    step(s, ZERO_INPUT, ghost);
+    s.x = p.x;
+    s.y = p.y;
+    s.z = p.z;
+    s.speed = 160;
+  }
+  s.x = sp.cx;
+  s.y = sp.coreY;
+  step(s, ZERO_INPUT, ghost);
+  expect(s.eventTick).toBe(evTick);
+});
+
+test('the proximity streak raises the score rate and survives a short gap', () => {
+  const s = createState(2);
+  s.streakTicks = C.STREAK_FULL;
+  expect(scoreRateFor(s)).toBeGreaterThan(scoreRateFor(createState(2)));
+});
+
+function scoreRateFor(s: ReturnType<typeof createState>): number {
+  const sf = Math.min(Math.max((s.speed - C.MIN_SPEED) / (C.MAX_SPEED - C.MIN_SPEED), 0), 1);
+  const streak = Math.min(s.streakTicks / C.STREAK_FULL, 1);
+  return (
+    (C.SCORE_FLOOR + (1 - C.SCORE_FLOOR) * sf * sf) *
+    (1 + C.PROX_BONUS * s.proximity + C.STREAK_BONUS * streak)
+  );
+}

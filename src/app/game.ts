@@ -136,6 +136,11 @@ export class Game {
     this.phase = 'running';
   }
 
+  /** Test hook: disables hull collision (proximity and events still run). */
+  setGhost(on: boolean): void {
+    this.scratch.ghost = on;
+  }
+
   /** Test hook: moves the plane (collision is evaluated on the next tick). */
   teleport(x: number, y: number, z: number): void {
     this.state.x = x;
@@ -212,6 +217,9 @@ export class Game {
       rollRate: s.rollRate,
       score: s.score,
       proximity: s.proximity,
+      streakTicks: s.streakTicks,
+      eventId: s.eventId,
+      eventPoints: s.eventPoints,
       checksum: (checksum(s) >>> 0).toString(16).padStart(8, '0'),
     };
   }

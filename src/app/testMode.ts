@@ -11,6 +11,7 @@ export interface GameTestApi {
   setInput(input: InputFrame | null): void;
   loadReplay(replay: unknown): void;
   teleport(x: number, y: number, z: number): void;
+  ghost(on: boolean): void;
   restart(seed?: number): void;
   replay(): unknown;
   frameHash(): string;
@@ -64,6 +65,7 @@ export function installTestApi(game: Game, canvas: HTMLCanvasElement, simVersion
     setInput: (input) => game.setInput(input),
     loadReplay: (replay) => game.loadReplay(replay),
     teleport: (x, y, z) => game.teleport(x, y, z),
+    ghost: (on) => game.setGhost(on),
     restart: (seed) => game.restart(seed),
     replay: () => game.replay({ recordedBy: 'browser' }),
     frameHash: () => game.renderer.frameHash().toString(16).padStart(8, '0'),

@@ -8,7 +8,7 @@ import { rotate } from './quat.ts';
 export const HULL_PROBES: readonly number[] = [
   0, 0, 3, 0, 0, -2, -4, 0, 0, 4, 0, 0, 0, 1, 0, 0, -1, 0,
 ];
-export const HULL_REACH = 4;
+export const HULL_REACH = 8;
 
 export class CollisionScratch {
   readonly sampler: FieldSampler;
@@ -54,9 +54,18 @@ export function hullHits(
   return false;
 }
 
-/** [0, 1]: 1 touching rock, 0 at PROXIMITY_RANGE or further. */
-export function proximityAt(cs: CollisionScratch, x: number, y: number, z: number): number {
-  const d = cs.sampler.density(x, y, z);
+/** Signed field value at a point (rock > 0): distance-like in air. */
+export function distanceAt(cs: CollisionScratch, x: number, y: number, z: number): number {
+  return cs.sampler.density(x, y, z);
+}
+
+/** [0, 1] from a field value: 1 touching rock, 0 at PROXIMITY_RANGE or further. */
+export function proximityOf(d: number): number {
   const prox = -d / C.PROXIMITY_RANGE;
   return prox < 0 ? 0 : prox > 1 ? 1 : prox;
+}
+
+/** [0, 1]: 1 touching rock, 0 at PROXIMITY_RANGE or further. */
+export function proximityAt(cs: CollisionScratch, x: number, y: number, z: number): number {
+  return proximityOf(distanceAt(cs, x, y, z));
 }

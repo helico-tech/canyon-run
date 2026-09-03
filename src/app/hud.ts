@@ -33,8 +33,14 @@ export function formatSeed(seed: number): string {
 
 export function scoreRate(state: SimState): number {
   const sf = Math.min(Math.max((state.speed - C.MIN_SPEED) / (C.MAX_SPEED - C.MIN_SPEED), 0), 1);
-  return (C.SCORE_FLOOR + (1 - C.SCORE_FLOOR) * sf * sf) * (1 + C.PROX_BONUS * state.proximity);
+  const streak = Math.min(state.streakTicks / C.STREAK_FULL, 1);
+  return (
+    (C.SCORE_FLOOR + (1 - C.SCORE_FLOOR) * sf * sf) *
+    (1 + C.PROX_BONUS * state.proximity + C.STREAK_BONUS * streak)
+  );
 }
+
+export const EVENT_NAMES = ['', 'close', 'so close', 'threaded', 'gate'];
 
 export function createHud(parent: HTMLElement): Hud {
   const root = el('div', '');
@@ -66,11 +72,25 @@ export function createHud(parent: HTMLElement): Hud {
   const dead = el('div', 'dead', 'crashed');
   dead.hidden = true;
   const vignette = el('div', 'vignette');
-  root.append(vignette, score, speed, alt, horizon, reticle, ...glows, seedEl, replay, dead);
+  const callouts = el('div', 'callouts');
+  root.append(
+    vignette,
+    score,
+    speed,
+    alt,
+    horizon,
+    reticle,
+    ...glows,
+    seedEl,
+    replay,
+    dead,
+    callouts,
+  );
   parent.appendChild(root);
 
   const b = new Float64Array(9);
   let lastText = -Infinity;
+  let lastEventTick = -1;
   return {
     root,
     setSeed(seed) {
@@ -92,6 +112,17 @@ export function createHud(parent: HTMLElement): Hud {
       for (let i = 0; i < 4; i++) glows[i]!.style.opacity = view.glow[i]!.toFixed(2);
       replay.hidden = view.replayLabel === null;
       dead.hidden = state.alive === 1;
+      if (state.eventId !== 0 && state.eventTick !== lastEventTick) {
+        lastEventTick = state.eventTick;
+        const c = el(
+          'div',
+          'callout',
+          `+${Math.round(state.eventPoints / 1000)} ${EVENT_NAMES[state.eventId] ?? ''}`,
+        );
+        callouts.prepend(c);
+        while (callouts.childElementCount > 2) callouts.lastElementChild?.remove();
+        window.setTimeout(() => c.remove(), 900);
+      }
       if (nowMs - lastText >= TEXT_INTERVAL_MS) {
         lastText = nowMs;
         scoreValue.textContent = Math.floor(state.score / 1000).toLocaleString('en-US');

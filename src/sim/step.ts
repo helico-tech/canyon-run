@@ -3,7 +3,7 @@
 import { segmentAt } from '../terrain/biomes.ts';
 import { spineAt } from '../terrain/field.ts';
 import { createSpine } from '../terrain/spine.ts';
-import { CollisionScratch, hullHits, prepareTick, proximityAt } from './collision.ts';
+import { CollisionScratch, distanceAt, hullHits, prepareTick, proximityOf } from './collision.ts';
 import { C, speedFloor } from './constants.ts';
 import type { InputFrame } from './input.ts';
 import { KEY } from './input.ts';
@@ -128,12 +128,77 @@ export function step(
   ) {
     s.alive = 0;
   }
-  s.proximity = proximityAt(cs, s.x, s.y, s.z);
-
+  const d = distanceAt(cs, s.x, s.y, s.z);
+  s.proximity = proximityOf(d);
+  const near = -d; // metres to rock, roughly
   const sf = clamp((s.speed - C.MIN_SPEED) / (C.MAX_SPEED - C.MIN_SPEED), 0, 1);
+
+  // Proximity streak with a grace window.
+  if (near < C.STREAK_RANGE) {
+    s.streakTicks++;
+    s.graceTicks = 0;
+  } else if (s.streakTicks > 0) {
+    s.graceTicks++;
+    if (s.graceTicks > C.STREAK_GRACE) {
+      s.streakTicks = 0;
+      s.graceTicks = 0;
+    }
+  }
+  const streak = s.streakTicks < C.STREAK_FULL ? s.streakTicks / C.STREAK_FULL : 1;
   const rate = C.SCORE_FLOOR + (1 - C.SCORE_FLOOR) * sf * sf;
-  s.score += Math.floor(C.SCORE_PER_TICK * rate * (1 + C.PROX_BONUS * s.proximity));
+  s.score += Math.floor(
+    C.SCORE_PER_TICK * rate * (1 + C.PROX_BONUS * s.proximity + C.STREAK_BONUS * streak),
+  );
+
+  // Near-miss events: CLOSE / SO CLOSE when a close pass ends, THREADED between two near walls.
+  if (s.cooldown > 0) s.cooldown--;
+  let eventId = 0;
+  let eventPoints = 0;
+  if (near < C.CLOSE_DIST) {
+    if (s.closeTicks === 0 || near < s.closeMin) s.closeMin = near;
+    s.closeTicks++;
+  } else if (s.closeTicks > 0) {
+    if (s.alive && s.closeTicks >= C.CLOSE_MIN_TICKS && sf > C.CLOSE_MIN_SF && s.cooldown === 0) {
+      const soClose = s.closeMin < C.SO_CLOSE_DIST;
+      eventId = soClose ? 2 : 1;
+      eventPoints = soClose ? C.SO_CLOSE_BONUS : C.CLOSE_BONUS;
+    }
+    s.closeTicks = 0;
+    s.closeMin = 0;
+  }
+  const rX = b[0]!;
+  const rY = b[1]!;
+  const rZ = b[2]!;
+  const dl = distanceAt(
+    cs,
+    s.x + rX * C.THREAD_PROBE,
+    s.y + rY * C.THREAD_PROBE,
+    s.z + rZ * C.THREAD_PROBE,
+  );
+  const dr = distanceAt(
+    cs,
+    s.x - rX * C.THREAD_PROBE,
+    s.y - rY * C.THREAD_PROBE,
+    s.z - rZ * C.THREAD_PROBE,
+  );
+  if (-dl < C.THREAD_DIST && -dr < C.THREAD_DIST) {
+    s.threadTicks++;
+    if (s.alive && s.threadTicks === C.THREAD_TICKS && s.cooldown === 0 && eventId === 0) {
+      eventId = 3;
+      eventPoints = C.THREAD_BONUS;
+    }
+  } else s.threadTicks = 0;
   // Passing a biome gate (segment boundary) while alive pays a bonus.
-  if (s.alive && segmentAt(s.z).index > segBefore) s.score += C.GATE_BONUS;
+  if (s.alive && segmentAt(s.z).index > segBefore) {
+    eventId = 4;
+    eventPoints = C.GATE_BONUS;
+  }
+  if (eventId !== 0) {
+    s.score += eventPoints;
+    s.eventId = eventId;
+    s.eventTick = s.tick;
+    s.eventPoints = eventPoints;
+    if (eventId !== 4) s.cooldown = C.EVENT_COOLDOWN;
+  }
   s.tick++;
 }

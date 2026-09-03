@@ -197,3 +197,27 @@
   background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.9) 100%);
   opacity: 0.15;
 }
+#hud .callouts {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+#hud .callout {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2ee6d6;
+  text-shadow: 0 0 8px rgba(46, 230, 214, 0.6);
+  animation: rise 0.9s ease-out forwards;
+}
+@keyframes rise {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+}

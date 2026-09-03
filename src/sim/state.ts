@@ -25,6 +25,17 @@ export interface SimState {
   score: number;
   /** [0, 1], 1 = touching rock. Diagnostic and score input. */
   proximity: number;
+  /** Near-miss bookkeeping (integers except closeMin, in u). */
+  closeTicks: number;
+  closeMin: number;
+  threadTicks: number;
+  streakTicks: number;
+  graceTicks: number;
+  cooldown: number;
+  /** Last score event for the HUD: 0 none, 1 CLOSE, 2 SO CLOSE, 3 THREADED, 4 GATE. */
+  eventId: number;
+  eventTick: number;
+  eventPoints: number;
   seed: number;
   /** sfc32 state, advanced only by step(). */
   rng: Uint32Array;
@@ -49,6 +60,15 @@ export function createState(seed: number): SimState {
     yawRate: 0,
     score: 0,
     proximity: 0,
+    closeTicks: 0,
+    closeMin: 0,
+    threadTicks: 0,
+    streakTicks: 0,
+    graceTicks: 0,
+    cooldown: 0,
+    eventId: 0,
+    eventTick: 0,
+    eventPoints: 0,
     seed: seed >>> 0,
     rng: sfc32Seed(seed >>> 0),
   };
@@ -75,6 +95,15 @@ export function copyState(dst: SimState, src: SimState): void {
   dst.yawRate = src.yawRate;
   dst.score = src.score;
   dst.proximity = src.proximity;
+  dst.closeTicks = src.closeTicks;
+  dst.closeMin = src.closeMin;
+  dst.threadTicks = src.threadTicks;
+  dst.streakTicks = src.streakTicks;
+  dst.graceTicks = src.graceTicks;
+  dst.cooldown = src.cooldown;
+  dst.eventId = src.eventId;
+  dst.eventTick = src.eventTick;
+  dst.eventPoints = src.eventPoints;
   dst.seed = src.seed;
   dst.rng.set(src.rng);
 }

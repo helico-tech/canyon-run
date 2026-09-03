@@ -35,6 +35,22 @@ export const C = Object.freeze({
   SCORE_FLOOR: 0.2,
   PROX_BONUS: 1.0,
   GATE_BONUS: 1500000,
+  // near-miss events (distances in u, times in ticks, points in milli-points)
+  CLOSE_DIST: 3,
+  SO_CLOSE_DIST: 1.5,
+  CLOSE_MIN_TICKS: 5,
+  CLOSE_MIN_SF: 0.5,
+  THREAD_DIST: 6,
+  THREAD_PROBE: 8,
+  THREAD_TICKS: 3,
+  EVENT_COOLDOWN: 36,
+  STREAK_RANGE: 10,
+  STREAK_GRACE: 45,
+  STREAK_FULL: 120,
+  STREAK_BONUS: 0.5,
+  CLOSE_BONUS: 250000,
+  SO_CLOSE_BONUS: 750000,
+  THREAD_BONUS: 500000,
   // start
   START_THROTTLE: 0.5,
 });
