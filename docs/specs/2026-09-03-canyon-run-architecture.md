@@ -110,7 +110,7 @@ score:     sf = clamp((speed - MIN_SPEED)/(MAX_SPEED - MIN_SPEED), 0, 1)
 v1 constants: `MIN_SPEED 50`, `MAX_SPEED 170`, `THROTTLE_PER_TICK 1/90`,
 `SPEED_LERP 0.03`, `DIVE_GAIN 20`, `ROLL_RATE 3.5`, `PITCH_RATE 1.75`,
 `YAW_RATE 0.7`, `RATE_LERP 0.2`, `MOUSE_*_GAIN 0.02`, `BANK_YAW_GAIN 0.6`,
-`AUTO_LEVEL 0.35`, `CEIL_MARGIN 8`, `CEIL_SOFT 20`, `CEIL_PUSH 2`,
+`AUTO_LEVEL 0.35`, `CEIL_MARGIN 16` (was 8: the warped roof dips up to 14 u below `ceilY`, see docs/domain/terrain-field.md), `CEIL_SOFT 20`, `CEIL_PUSH 2`,
 `TURBULENCE 0`, `HULL_TOLERANCE 0.4`, `SCORE_PER_TICK 1000`,
 `SCORE_FLOOR 0.2`, `PROX_BONUS 1.0`. All per-tick; none derived with `exp`.
 
