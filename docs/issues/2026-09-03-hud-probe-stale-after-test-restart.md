@@ -1,8 +1,9 @@
 ---
-status: open
+status: triaged
 priority: P3
 filed: 2026-09-03
 filed-by: agent
+work: CR-0038
 ---
 # Test API restart(seed) leaves HudProbe on the previous seed
 

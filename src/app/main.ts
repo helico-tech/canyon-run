@@ -79,6 +79,7 @@ const applySeed = (s: number, mode: number): void => {
   if (!test) history.replaceState(null, '', hashForSeed(s, name));
 };
 applySeed(game.seed, game.biomeMode);
+game.onWorldChange = applySeed;
 
 if (test) {
   installTestApi(game, canvas, SIM_VERSION);
@@ -93,7 +94,6 @@ if (test) {
   if (hint) hint.hidden = true;
 
   const begin = (s: number, mode: number = game.biomeMode): void => {
-    if (s !== game.seed || mode !== game.biomeMode) applySeed(s, mode);
     screens.hideStart();
     screens.hideRunOver();
     sampler.releaseAll();

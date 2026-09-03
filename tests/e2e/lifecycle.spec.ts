@@ -42,3 +42,18 @@ test('start screen, death, run-over panel and R restart', async ({ page }) => {
     server.close();
   }
 });
+
+test('a test-API restart moves the HUD seed label and probe to the new world', async ({ page }) => {
+  const server = await serveStatic(path.join(root, 'dist'));
+  try {
+    await page.goto(`${server.url}/?test=1&seed=1&nogl=1`);
+    await page.waitForFunction(() => window.__game?.ready === true, undefined, { timeout: 60000 });
+    await expect(page.locator('.seed')).toHaveText(/0000-0001/);
+    await page.evaluate(() => window.__game!.restart(2));
+    await expect(page.locator('.seed')).toHaveText(/0000-0002/);
+    await page.evaluate(() => window.__game!.step(5));
+    expect(Number(await page.evaluate(() => window.__game!.state().tick))).toBe(5);
+  } finally {
+    await server.close();
+  }
+});

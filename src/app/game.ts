@@ -158,8 +158,12 @@ export class Game {
   }
 
   /** New run on `seed` (same seed keeps the chunk cache). Under 300 ms either way. */
+  /** Called whenever the world (seed or biome mode) changes, from any path. */
+  onWorldChange: ((seed: number, biomeMode: number) => void) | null = null;
+
   restart(seed: number = this.state.seed, biomeMode: number = this.state.biomeMode): void {
     const s = seed >>> 0;
+    const changed = s !== this.state.seed || biomeMode !== this.state.biomeMode;
     this.state = createState(s, biomeMode);
     this.prev = cloneState(this.state);
     this.scratch = new StepScratch(s, { mode: biomeMode, ghost: this.scratch.ghost });
@@ -167,6 +171,7 @@ export class Game {
     this.defaultSource = this.playerSource ?? createPilot(s, { mode: biomeMode });
     this.topSpeed = 0;
     this.deathTick = -1;
+    if (changed) this.onWorldChange?.(s, biomeMode);
     this.renderer.clearShards();
     this.replayLabel = null;
     this.source = this.defaultSource;
