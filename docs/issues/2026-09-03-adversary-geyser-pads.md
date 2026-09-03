@@ -1,5 +1,5 @@
 ---
-status: triaged
+status: resolved
 priority: P3
 filed: 2026-09-03
 filed-by: agent
@@ -18,3 +18,5 @@ it once the pulse dwell is longer than the plane's crossing.
 From the EPIC-10 research (`docs/research/2026-09-03-06-adversaries-design.md`).
 
 ## Resolution
+
+**Resolved 2026-09-03** in CR-0044, commit 2e53518. MOTION_ERUPT column (archetype 8) in the lava rift; rise under 0.9 u per tick.
