@@ -8,6 +8,7 @@ import { applyPose } from './camera.ts';
 import { chunkId, createTerrainMaterial, disposeMesh, toThreeMesh } from './chunkMesh.ts';
 import { Sky } from './sky.ts';
 import { Streaks } from './streaks.ts';
+import { Shards } from './shards.ts';
 
 export interface RendererOptions {
   width: number;
@@ -21,6 +22,17 @@ export interface GameRenderer {
   readonly info: { renderer: string; vendor: string; version: string };
   setSeed(seed: number): void;
   setAtmosphere(a: Atmosphere): void;
+  spawnShards(
+    seed: number,
+    x: number,
+    y: number,
+    z: number,
+    vx: number,
+    vy: number,
+    vz: number,
+    accent: [number, number, number],
+  ): void;
+  clearShards(): void;
   addChunk(chunk: ChunkMesh): void;
   hasChunk(cx: number, cy: number, cz: number): boolean;
   removeChunk(cx: number, cy: number, cz: number): void;
@@ -41,6 +53,7 @@ export class Renderer implements GameRenderer {
   readonly info: { renderer: string; vendor: string; version: string };
   private readonly sky = new Sky();
   private streaks: Streaks | null = null;
+  private readonly shards = new Shards();
   private travel = 0;
   private lastTime = Number.NaN;
   private readonly sun = new THREE.DirectionalLight(0xffffff, 2);
@@ -68,7 +81,7 @@ export class Renderer implements GameRenderer {
     this.gl.setSize(opts.width, opts.height, false);
     this.camera = new THREE.PerspectiveCamera(66, opts.width / opts.height, 0.5, 800);
     this.scene.fog = this.fog;
-    this.scene.add(this.sky.mesh, this.sun, this.hemi);
+    this.scene.add(this.sky.mesh, this.sun, this.hemi, this.shards.mesh);
     const ctx = this.gl.getContext();
     const dbg = ctx.getExtension('WEBGL_debug_renderer_info');
     this.info = {
@@ -80,6 +93,23 @@ export class Renderer implements GameRenderer {
         : String(ctx.getParameter(ctx.VENDOR)),
       version: String(ctx.getParameter(ctx.VERSION)),
     };
+  }
+
+  spawnShards(
+    seed: number,
+    x: number,
+    y: number,
+    z: number,
+    vx: number,
+    vy: number,
+    vz: number,
+    accent: [number, number, number],
+  ): void {
+    this.shards.spawn(seed, x, y, z, vx, vy, vz, accent);
+  }
+
+  clearShards(): void {
+    this.shards.clear();
   }
 
   /** Installs the speed streaks for a seed (layout is seeded so frames stay deterministic). */
@@ -173,8 +203,14 @@ export class Renderer implements GameRenderer {
       const dt = Number.isNaN(this.lastTime) ? 0 : Math.max(0, pose.time - this.lastTime) / 60;
       this.lastTime = pose.time;
       this.travel += pose.speed * dt;
-      this.streaks.update(pose, this.camera.quaternion, this.travel, pose.speed);
+      this.streaks.update(
+        pose,
+        this.camera.quaternion,
+        this.travel,
+        pose.deadFor > 0 ? 0 : pose.speed,
+      );
     }
+    this.shards.update(pose.deadFor);
     this.gl.render(this.scene, this.camera);
   }
 

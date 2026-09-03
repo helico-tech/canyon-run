@@ -221,3 +221,27 @@
     transform: translateY(-40px);
   }
 }
+#hud .flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+#hud .flash.go {
+  animation: flash 0.12s linear forwards;
+}
+@keyframes flash {
+  0% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+#root canvas {
+  transition: filter 0.5s ease-out;
+}
+#root.dead canvas {
+  filter: saturate(0.4);
+}

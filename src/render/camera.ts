@@ -20,6 +20,8 @@ export interface RenderPose {
   time: number;
   /** Speed in u/s. */
   speed: number;
+  /** Seconds since death (0 while alive). */
+  deadFor: number;
 }
 
 export const FOV_BASE = 66;

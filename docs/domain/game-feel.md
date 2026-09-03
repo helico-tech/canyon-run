@@ -13,4 +13,15 @@ not the wall clock, so headless frames stay deterministic.
 | Camera lean | rigid aim plus roll 3°, pitch 2°, yaw 2° at full commanded rate (from the filtered sim rates) |
 | Shake | rotational noise sampled at 28 Hz from a hashed lattice of the tick: `0.25°·proximity² + 0.05°·t_v²`, clamped to 1.5° |
 
-Death effects come in CR-0025; near-miss callouts in CR-0024.
+## Death sequence (CR-0025)
+
+Ticks keep counting while the plane is dead, so the timeline is sim-driven:
+
+| t since death | Effect |
+|---|---|
+| 0 | white flash (0.9 → 0 over 120 ms), 48 shards burst from the crash point (plane velocity + 10–40 u/s, gravity 20, 1.2 s life, hashed from seed and tick), canvas desaturates over 0.5 s |
+| 0–90 ms | hitstop: the camera holds the death pose |
+| 90 ms → | the camera drifts along the last velocity with a 0.6 s decay and tumbles at 60–120°/s (hashed axis), decaying |
+| 600 ms | the run-over panel (CR-0014) |
+
+Near-miss callouts are in CR-0024.

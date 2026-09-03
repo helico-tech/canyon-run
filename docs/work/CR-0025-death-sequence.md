@@ -1,7 +1,7 @@
 ---
 id: CR-0025
 epic: EPIC-07
-status: todo
+status: done
 ---
 # CR-0025 Death sequence
 
@@ -12,3 +12,7 @@ status: todo
 **Acceptance.** Sim state after death is unchanged by the effect (checksum stable). Headless: three frames after a forced collision show flash → shards → panel (sheet in `docs/evidence/`).
 
 **Verification.** `pnpm check`, `pnpm test:e2e`.
+
+**Delivered notes.** The death camera and shard burst are driven by ticks
+since death rather than the wall clock, so headless frames after a crash are
+reproducible. Evidence in `docs/evidence/2026-09-03-CR-0025/`.

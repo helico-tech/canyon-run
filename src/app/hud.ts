@@ -73,6 +73,8 @@ export function createHud(parent: HTMLElement): Hud {
   dead.hidden = true;
   const vignette = el('div', 'vignette');
   const callouts = el('div', 'callouts');
+  const flash = el('div', 'flash');
+  flash.hidden = true;
   root.append(
     vignette,
     score,
@@ -85,12 +87,14 @@ export function createHud(parent: HTMLElement): Hud {
     replay,
     dead,
     callouts,
+    flash,
   );
   parent.appendChild(root);
 
   const b = new Float64Array(9);
   let lastText = -Infinity;
   let lastEventTick = -1;
+  let wasAlive = true;
   return {
     root,
     setSeed(seed) {
@@ -112,6 +116,17 @@ export function createHud(parent: HTMLElement): Hud {
       for (let i = 0; i < 4; i++) glows[i]!.style.opacity = view.glow[i]!.toFixed(2);
       replay.hidden = view.replayLabel === null;
       dead.hidden = state.alive === 1;
+      if (state.alive === 0 && wasAlive) {
+        flash.hidden = false;
+        flash.classList.remove('go');
+        void flash.offsetWidth; // restart the animation
+        flash.classList.add('go');
+        root.parentElement?.classList.add('dead');
+      } else if (state.alive === 1 && !wasAlive) {
+        flash.hidden = true;
+        root.parentElement?.classList.remove('dead');
+      }
+      wasAlive = state.alive === 1;
       if (state.eventId !== 0 && state.eventTick !== lastEventTick) {
         lastEventTick = state.eventTick;
         const c = el(
