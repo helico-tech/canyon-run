@@ -14,7 +14,7 @@ import type { Replay } from '../sim/replay.ts';
 import { checksum, cloneState, copyState, createState } from '../sim/state.ts';
 import { hex32 } from '../sim/hash.ts';
 import { basis } from '../sim/quat.ts';
-import { advPoseAt, createPose } from '../sim/adversaries.ts';
+import { advPoseAt, aimFrom, createAim, createPose } from '../sim/adversaries.ts';
 import type { SimState } from '../sim/state.ts';
 import { step, StepScratch } from '../sim/step.ts';
 import { CANYON_PALETTE } from '../terrain/palette.ts';
@@ -159,6 +159,7 @@ export class Game {
 
   /** New run on `seed` (same seed keeps the chunk cache). Under 300 ms either way. */
   /** Called whenever the world (seed or biome mode) changes, from any path. */
+  private readonly aim = createAim();
   onWorldChange: ((seed: number, biomeMode: number) => void) | null = null;
 
   restart(seed: number = this.state.seed, biomeMode: number = this.state.biomeMode): void {
@@ -204,7 +205,7 @@ export class Game {
     const pose = createPose();
     for (let i = 0; i < adv.count; i++) {
       const st = adv.stations[i]!;
-      advPoseAt(st, this.state.tick, this.state.z, pose);
+      advPoseAt(st, this.state.tick, this.state.z, pose, aimFrom(this.state, this.aim));
       out.push({ id: st.id, z: st.z, shape: st.shape, motion: st.motion, x: pose.x, y: pose.y });
     }
     return out;
@@ -325,6 +326,7 @@ export class Game {
       pose.time,
       pose.z,
       a.accent,
+      aimFrom(this.state, this.aim, pose.x, pose.y),
     );
     this.renderer.render(pose);
     this.onRender?.(this.state, alpha);

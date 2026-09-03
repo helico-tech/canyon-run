@@ -3,7 +3,7 @@
 import { segmentAt } from '../terrain/biomes.ts';
 import { spineAt } from '../terrain/field.ts';
 import { createSpine } from '../terrain/spine.ts';
-import { AdversaryScratch } from './adversaries.ts';
+import { AdversaryScratch, aimFrom, createAim } from './adversaries.ts';
 import { CollisionScratch, distanceAt, hullHits, prepareTick, proximityOf } from './collision.ts';
 import { C, speedFloor } from './constants.ts';
 import type { InputFrame } from './input.ts';
@@ -33,6 +33,7 @@ export class StepScratch {
   ghost: boolean;
   readonly collision: CollisionScratch;
   readonly adversaries: AdversaryScratch;
+  readonly aim = createAim();
   readonly basis = new Float64Array(9);
   readonly quat = new Float64Array(4);
   readonly spine = createSpine();
@@ -134,7 +135,8 @@ export function step(
   // Adversaries: analytic bodies posed at the tick's end; they never enter the field.
   const adv = scratch.adversaries;
   adv.activate(s.z);
-  adv.posesAt(s.tick + 1, s.z, z0 < s.z ? z0 : s.z, z0 < s.z ? s.z : z0);
+  adv.lockAim(s);
+  adv.posesAt(s.tick + 1, s.z, z0 < s.z ? z0 : s.z, z0 < s.z ? s.z : z0, aimFrom(s, scratch.aim));
 
   // Collision at the midpoint and the end of the tick's travel, plus the exact
   // crossing of an adversary station plane so thin bodies cannot be stepped over.

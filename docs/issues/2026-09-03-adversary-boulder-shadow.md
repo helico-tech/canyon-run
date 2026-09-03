@@ -1,8 +1,9 @@
 ---
-status: open
+status: triaged
 priority: P3
 filed: 2026-09-03
 filed-by: agent
+work: CR-0045
 ---
 # Adversary: hoodoo boulder shadow that tracks the plane in x
 

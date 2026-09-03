@@ -67,7 +67,7 @@ export const ARCHIPELAGO_BIOME: BiomeDef = Object.freeze<BiomeDef>({
   adversaries: {
     spacing: 260,
     prob: 0.8,
-    archetypes: [4, 3],
+    archetypes: [10, 4, 3],
     rMin: 3,
     rMax: 5,
     lenMin: 17,

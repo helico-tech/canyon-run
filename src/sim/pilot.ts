@@ -7,7 +7,15 @@
 // pitch and yaw commands, and the plane banks into the turn so pitch authority
 // is available for turning.
 import { spineAt } from '../terrain/field.ts';
-import { AdversaryScratch, advPoseAt, createPose, hullClearance } from './adversaries.ts';
+import {
+  AdversaryScratch,
+  MOTION_AIM,
+  advPoseAt,
+  aimFrom,
+  createAim,
+  createPose,
+  hullClearance,
+} from './adversaries.ts';
 import { clamp, smoothstep } from '../terrain/noise.ts';
 import { createSpine } from '../terrain/spine.ts';
 import { C } from './constants.ts';
@@ -60,6 +68,7 @@ export function createPilot(seed: number, opts: PilotOptions = {}): (s: SimState
   const dodge = opts.dodge ?? true;
   const adv = new AdversaryScratch(seed, biomeMode);
   const advPose = createPose();
+  const aim = createAim();
   const rng = sfc32Seed((seed ^ 0xa5a5a5a5) >>> 0);
   const sp = createSpine();
   const stationSpine = createSpine();
@@ -94,6 +103,8 @@ export function createPilot(seed: number, opts: PilotOptions = {}): (s: SimState
       let nextZ = s.z + DODGE_HORIZON;
       for (let i = 0; i < adv.count; i++) {
         const st = adv.stations[i]!;
+        // An aimed body is nothing to dodge until it has locked.
+        if (st.motion === MOTION_AIM && st.id !== s.advLockId) continue;
         if (st.z > s.z + 1 && st.z < nextZ) {
           nextZ = st.z;
           next = i;
@@ -122,13 +133,13 @@ export function createPilot(seed: number, opts: PilotOptions = {}): (s: SimState
             let worst = Infinity;
             if (pass === 0) {
               for (let m = 0; m < PERIOD_SAMPLES; m++) {
-                advPoseAt(st, (m * st.period) / PERIOD_SAMPLES, st.z, advPose);
+                advPoseAt(st, (m * st.period) / PERIOD_SAMPLES, st.z, advPose, aimFrom(s, aim));
                 const sd = hullClearance(st, advPose, coreX + ox, coreY + oy, st.z);
                 if (sd < worst) worst = sd;
               }
             } else {
               for (let dt = -DODGE_WINDOW; dt <= DODGE_WINDOW; dt += DODGE_WINDOW_STEP) {
-                advPoseAt(st, s.tick + eta + dt, st.z, advPose);
+                advPoseAt(st, s.tick + eta + dt, st.z, advPose, aimFrom(s, aim));
                 const sd = hullClearance(st, advPose, coreX + ox, coreY + oy, st.z);
                 if (sd < worst) worst = sd;
               }

@@ -13,7 +13,7 @@ import {
   SHAPE_WEDGE,
   swing,
 } from '../sim/adversaries.ts';
-import type { AdversaryScratch, Station } from '../sim/adversaries.ts';
+import type { AdversaryScratch, Aim, Station } from '../sim/adversaries.ts';
 import { spineAt } from '../terrain/field.ts';
 import { createSpine } from '../terrain/spine.ts';
 import type { Rgb } from '../terrain/palette.ts';
@@ -124,6 +124,7 @@ export class AdversaryLayer {
     time: number,
     planeZ: number,
     accent: Rgb | undefined,
+    aim: Aim,
   ): void {
     const counts = [0, 0, 0, 0];
     let frameCount = 0;
@@ -133,7 +134,7 @@ export class AdversaryLayer {
     for (let i = 0; i < adv.count; i++) {
       const st = adv.stations[i]!;
       if (st.z < planeZ - 40 || st.z > planeZ + 720) continue;
-      advPoseAt(st, time, planeZ, this.pose);
+      advPoseAt(st, time, planeZ, this.pose, aim);
       const layer = this.layers[st.shape]!;
       const shapeIndex =
         st.shape === SHAPE_BOX

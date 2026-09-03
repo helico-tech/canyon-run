@@ -58,3 +58,6 @@ designed the concepts and the machinery.
 - Difficulty is two more literal per-segment tables (probability, speed).
 - Kinds that need agency (the "mimic") wait for a later story that adds a
   fixed, hashed slot array to the state.
+  > **AMENDED 2026-09-03 (CR-0045):** no slot array was needed. One aimed
+  > station is relevant at a time, so three hashed fields (`advLockId`,
+  > `advLockX`, `advLockY`) carry the lock; everything else stays closed-form.

@@ -4,10 +4,12 @@
 // cap. Pure and allocation-light so tests and the CLI tool share it.
 import {
   advPoseAt,
+  createAim,
   createPose,
   gatherStations,
   hullClearance,
   createStation,
+  MOTION_AIM,
 } from './adversaries.ts';
 import type { Station } from './adversaries.ts';
 import { C } from './constants.ts';
@@ -75,6 +77,42 @@ export function auditStation(seed: number, mode: number, st: Station): StationVe
     }
   }
   const count = cellsX.length;
+  if (st.motion === MOTION_AIM) {
+    // Static after the lock: for every lock position inside the core a clear hull
+    // position must exist within reach of the plane before it arrives.
+    const pose = createPose();
+    const aim = createAim();
+    aim.lockId = st.id;
+    const ticks = st.closeDist / (C.MAX_SPEED * C.DT);
+    const budget = ticks * LAT;
+    for (let a = -st.ax; a <= st.ax + 1e-9; a += 2) {
+      for (let b = -st.ay; b <= st.ay + 1e-9; b += 2) {
+        aim.lockX = sp.cx + a;
+        aim.lockY = sp.coreY + b;
+        advPoseAt(st, 0, st.z, pose, aim);
+        let nearest = Infinity;
+        let freeCount = 0;
+        for (let k = 0; k < count; k++) {
+          if (hullClearance(st, pose, cellsX[k]!, cellsY[k]!, st.z) < 0) continue;
+          freeCount++;
+          const dx = cellsX[k]! - aim.lockX;
+          const dy = cellsY[k]! - aim.lockY;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < nearest) nearest = d;
+        }
+        if (freeCount < verdict.worstFreeCells) verdict.worstFreeCells = freeCount;
+        if (freeCount === 0 || nearest > budget) {
+          verdict.ok = false;
+          verdict.reason =
+            freeCount === 0
+              ? `lock at ${a.toFixed(0)},${b.toFixed(0)}: no clear hull position`
+              : `lock at ${a.toFixed(0)},${b.toFixed(0)}: nearest clear position ${nearest.toFixed(1)} u away, budget ${budget.toFixed(1)}`;
+          return verdict;
+        }
+      }
+    }
+    return verdict;
+  }
   const period = st.period;
   // Free sets per tick over one period (plus the approach for CLOSE laws).
   const pose = createPose();

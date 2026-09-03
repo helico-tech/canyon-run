@@ -10,6 +10,7 @@ import { Sky } from './sky.ts';
 import { Streaks } from './streaks.ts';
 import { Shards } from './shards.ts';
 import { AdversaryLayer } from './adversaries.ts';
+import type { Aim } from '../sim/adversaries.ts';
 import type { AdversaryScratch } from '../sim/adversaries.ts';
 import type { Rgb } from '../terrain/palette.ts';
 
@@ -43,6 +44,7 @@ export interface GameRenderer {
     time: number,
     planeZ: number,
     accent: Rgb | undefined,
+    aim: Aim,
   ): void;
   addChunk(chunk: ChunkMesh): void;
   evictBelow(minCz: number): number;
@@ -129,8 +131,9 @@ export class Renderer implements GameRenderer {
     time: number,
     planeZ: number,
     accent: Rgb | undefined,
+    aim: Aim,
   ): void {
-    this.adversaries.update(seed, mode, adv, time, planeZ, accent);
+    this.adversaries.update(seed, mode, adv, time, planeZ, accent, aim);
   }
 
   /** Installs the speed streaks for a seed (layout is seeded so frames stay deterministic). */

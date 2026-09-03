@@ -34,6 +34,10 @@ export interface SimState {
   cooldown: number;
   /** Highest segment whose gate has paid (latched so a re-crossing pays nothing). */
   gateSeg: number;
+  /** Aimed adversary lock: station id (0 none) and the locked cross-section position. */
+  advLockId: number;
+  advLockX: number;
+  advLockY: number;
   /** Last score event for the HUD: 0 none, 1 CLOSE, 2 SO CLOSE, 3 THREADED, 4 GATE, 5 DODGED. */
   eventId: number;
   eventTick: number;
@@ -71,6 +75,9 @@ export function createState(seed: number, biomeMode = 0): SimState {
     graceTicks: 0,
     cooldown: 0,
     gateSeg: 0,
+    advLockId: 0,
+    advLockX: 0,
+    advLockY: 0,
     eventId: 0,
     eventTick: 0,
     eventPoints: 0,
@@ -107,6 +114,9 @@ export function copyState(dst: SimState, src: SimState): void {
   dst.streakTicks = src.streakTicks;
   dst.graceTicks = src.graceTicks;
   dst.gateSeg = src.gateSeg;
+  dst.advLockId = src.advLockId;
+  dst.advLockX = src.advLockX;
+  dst.advLockY = src.advLockY;
   dst.cooldown = src.cooldown;
   dst.eventId = src.eventId;
   dst.eventTick = src.eventTick;
@@ -136,6 +146,8 @@ export function checksum(s: SimState): number {
       s.proximity,
       s.closeMin,
       s.eventPoints,
+      s.advLockX,
+      s.advLockY,
     ],
     [
       s.tick,
@@ -150,6 +162,7 @@ export function checksum(s: SimState): number {
       s.graceTicks,
       s.cooldown,
       s.gateSeg,
+      s.advLockId,
       s.eventId,
       s.eventTick,
       s.biomeMode,

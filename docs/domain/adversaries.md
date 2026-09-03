@@ -28,11 +28,22 @@ radius used by the fairness rules.
 | 5 | closing jaws | close as the plane approaches | either side of the core, gap ≥ `gapMin` |
 | 6 | sweeping spinning blade | sweep in x | beside the core only (never crossing) |
 | 7 | crystal iris | pulse (radius breathes) | on the core; closed it still clears the core before segment 4, later still fits the level hull |
+| 9 | boulder shadow (thin slab) | aim: mirrors the plane, locks at `closeDist`, holds | inside the core from segment 4; thin enough that a lane above or below always remains |
+| 10 | mimic shard | aim (as above) | inside the core from segment 4 |
 | 8 | geyser | erupt (rests in the floor, one eased burst per period) | rises to just below the core before segment 4, later to just below a 3 u lane at the top of the core; never faster than 0.9 u per tick |
 
 Motion is transcendental-free: triangle and swing waves, a 32-entry circle
-table, and an approach-driven law for jaws (the gap depends on the plane's
-distance, not on time).
+table, an approach-driven law for jaws (the gap depends on the plane's
+distance, not on time), and the aim law (CR-0045). Aimed bodies are the one
+kind with state: while the plane is further than `closeDist` the body mirrors
+the plane's cross-section position (clamped to the core); the first tick the
+plane is inside `closeDist` the nearest aimed station ahead locks, and the
+state records `advLockId`, `advLockX`, `advLockY` (hashed, so replays carry
+them). The body then holds that position; a passed station keeps its lock
+until it is out of the collision band, so it never snaps back onto the plane
+on the crossing tick. The audit checks every lock position on a 2 u lattice
+inside the core: a clear hull position must exist within the distance the
+plane can move laterally before it arrives.
 
 ## Biome sets
 
@@ -42,8 +53,8 @@ distance, not on time).
 | cave | hoops | 240 | 0.8 |
 | crystal spires | spinning blades, irises, hoops | 260 | 0.8 |
 | lava rift | geysers, pistons (presses), jaws | 240 | 0.85 |
-| hoodoo desert | bouncing blocks, orbiting shards | 220 | 0.85 |
-| floating archipelago | orbiting shards, hoops | 260 | 0.8 |
+| hoodoo desert | boulder shadows, bouncing blocks, orbiting shards | 220 | 0.85 |
+| floating archipelago | mimic shards, orbiting shards, hoops | 260 | 0.8 |
 | trench run | jaws, spinning blades | 200 | 0.9 |
 
 Difficulty scales station density (`ADVERSARY_FACTOR`) and motion speed

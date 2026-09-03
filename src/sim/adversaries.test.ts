@@ -1,13 +1,15 @@
 import { afterEach, expect, test } from 'vitest';
-import { CANYON_BIOME, SPECIALS, SEGMENT_HUB, segmentAt } from '../terrain/biomes.ts';
+import { SPECIALS, SEGMENT_HUB, segmentAt } from '../terrain/biomes.ts';
 import type { BiomeDef } from '../terrain/biomes.ts';
 import { spineAt } from '../terrain/field.ts';
-import { CANYON } from '../terrain/params.ts';
-import type { AdversaryParams } from '../terrain/params.ts';
+import { ARENA_BIOME } from './arena.fixture.ts';
 import {
   MOTION_CLOSE,
   MOTION_PULSE,
   MOTION_ERUPT,
+  MOTION_AIM,
+  aimFrom,
+  createAim,
   ERUPT_MAX_STEP,
   SHAPE_RING,
   advPoseAt,
@@ -21,6 +23,7 @@ import {
   swing,
   tri,
 } from './adversaries.ts';
+import type { Station } from './adversaries.ts';
 import { C } from './constants.ts';
 import { ZERO_INPUT } from './input.ts';
 import { createState } from './state.ts';
@@ -31,33 +34,6 @@ afterEach(() => {
   SPECIALS.length = 0;
   SPECIALS.push(...REGISTERED);
 });
-
-const ARENA: AdversaryParams = {
-  spacing: 150,
-  prob: 1,
-  archetypes: [0, 1, 2, 3, 4, 5, 6, 7, 8],
-  rMin: 2,
-  rMax: 4,
-  lenMin: 6,
-  lenMax: 24,
-  hz: 1.5,
-  periodMin: 180,
-  periodMax: 360,
-  ampX: 0.8,
-  ampY: 0.8,
-  gapMin: 28,
-  closeDist: 200,
-};
-
-/** A canyon-shaped special with adversaries at every cell, for tests. */
-const ARENA_BIOME: BiomeDef = {
-  id: 90,
-  name: 'arena',
-  params: { ...CANYON },
-  palette: CANYON_BIOME.palette,
-  atmosphere: CANYON_BIOME.atmosphere,
-  adversaries: ARENA,
-};
 
 function arenaOnly(): void {
   SPECIALS.length = 0;
@@ -282,4 +258,52 @@ test('a geyser rests in the floor, erupts below the lane at the top of the core,
     }
   }
   expect(checked).toBeGreaterThan(3);
+});
+
+test('an aimed body mirrors the plane, locks at closeDist on one tick, then holds', () => {
+  arenaOnly();
+  const out = Array.from({ length: 96 }, createStation);
+  let seed = 1;
+  let st: Station | undefined;
+  for (; seed <= 12 && !st; seed++) {
+    const n = gatherStations(seed, 0, 4800, 9000, out);
+    for (let i = 0; i < n && !st; i++) if (out[i]!.motion === MOTION_AIM) st = { ...out[i]! };
+  }
+  seed--;
+  expect(st).toBeDefined();
+  const s = createState(seed);
+  const scratch = new StepScratch(seed, { ghost: true });
+  const sp = spineAt(seed, st!.z);
+  s.z = st!.z - st!.closeDist - 40;
+  s.x = sp.cx + 3;
+  s.y = sp.coreY - 2;
+  s.speed = 150;
+  s.throttle = 1;
+  const pose = createPose();
+  const aim = createAim();
+  // Before the lock the body mirrors the plane.
+  advPoseAt(st!, s.tick, s.z, pose, aimFrom(s, aim));
+  expect(pose.x).toBeCloseTo(s.x, 9);
+  expect(pose.y).toBeCloseTo(s.y, 9);
+  let lockTick = -1;
+  for (let i = 0; i < 400 && s.z < st!.z; i++) {
+    const before = s.advLockId;
+    step(s, ZERO_INPUT, scratch);
+    if (before === 0 && s.advLockId !== 0) {
+      lockTick = s.tick;
+      expect(s.advLockId).toBe(st!.id);
+      expect(st!.z - s.z).toBeLessThanOrEqual(st!.closeDist);
+      expect(s.advLockX).toBeCloseTo(s.x, 9);
+      expect(s.advLockY).toBeCloseTo(s.y, 9);
+    }
+  }
+  expect(lockTick).toBeGreaterThan(0);
+  advPoseAt(st!, s.tick, s.z, pose, aimFrom(s, aim));
+  expect(pose.x).toBe(s.advLockX);
+  expect(pose.y).toBe(s.advLockY);
+  // Passing the station keeps its lock through the collision band: no snap onto the plane.
+  const lockX = s.advLockX;
+  for (let i = 0; i < 400 && s.z < st!.z + C.ADV_NEAR_BAND; i++) step(s, ZERO_INPUT, scratch);
+  expect(s.advLockId).toBe(st!.id);
+  expect(s.advLockX).toBe(lockX);
 });

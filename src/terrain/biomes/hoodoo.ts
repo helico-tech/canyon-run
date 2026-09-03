@@ -70,7 +70,7 @@ export const HOODOO_BIOME: BiomeDef = Object.freeze<BiomeDef>({
   adversaries: {
     spacing: 220,
     prob: 0.85,
-    archetypes: [1, 4],
+    archetypes: [9, 1, 4],
     rMin: 3,
     rMax: 5,
     lenMin: 6,

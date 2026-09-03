@@ -21,6 +21,7 @@ import { createSpine } from '../terrain/spine.ts';
 import { HULL_PROBES } from './collision.ts';
 import { C } from './constants.ts';
 import { rotate } from './quat.ts';
+import type { SimState } from './state.ts';
 
 export const SHAPE_BOX = 0;
 export const SHAPE_WEDGE = 1;
@@ -39,6 +40,8 @@ export const MOTION_PULSE = 6;
 export const MOTION_ERUPT = 7;
 /** Geysers rise no faster than this (u per tick), under the audit's lateral bound. */
 export const ERUPT_MAX_STEP = 0.9;
+/** Mirrors the plane's cross-section position, locks at `closeDist`, then holds. */
+export const MOTION_AIM = 8;
 
 /** Archetype rows [shape, motion, spin turns per period]. Ids are stable: replays depend on them. */
 export const ARCHETYPES: ReadonlyArray<readonly [number, number, number]> = [
@@ -51,6 +54,8 @@ export const ARCHETYPES: ReadonlyArray<readonly [number, number, number]> = [
   [SHAPE_BLADE, MOTION_SWEEP_X, 1], // 6 sweeping, spinning blade
   [SHAPE_RING, MOTION_PULSE, 0], // 7 crystal iris
   [SHAPE_BOX, MOTION_ERUPT, 0], // 8 geyser
+  [SHAPE_BOX, MOTION_AIM, 0], // 9 boulder shadow (thin slab)
+  [SHAPE_WEDGE, MOTION_AIM, 0], // 10 mimic shard
 ];
 
 export const ADV_MAX = 32;
@@ -120,6 +125,32 @@ export function createPose(): AdvPose {
   return { x: 0, y: 0, c: 1, s: 0, gap: 0, radius: 0 };
 }
 
+/** What aimed bodies see: the plane's position and the current lock (from SimState). */
+export interface Aim {
+  x: number;
+  y: number;
+  lockId: number;
+  lockX: number;
+  lockY: number;
+}
+
+export function createAim(): Aim {
+  return { x: 0, y: 0, lockId: 0, lockX: 0, lockY: 0 };
+}
+
+export function aimFrom(s: SimState, out: Aim, x = s.x, y = s.y): Aim {
+  out.x = x;
+  out.y = y;
+  out.lockId = s.advLockId;
+  out.lockX = s.advLockX;
+  out.lockY = s.advLockY;
+  return out;
+}
+
+function clampTo(v: number, centre: number, half: number): number {
+  return v < centre - half ? centre - half : v > centre + half ? centre + half : v;
+}
+
 // ---- motion primitives ------------------------------------------------------
 
 /** Fraction of the period in [0, 1); exact for integer time. */
@@ -178,7 +209,13 @@ export function circle(u: number, out: Float64Array, o: number): void {
 const tmp2 = new Float64Array(2);
 
 /** Pose at `time` (ticks, may be fractional) with the plane at `planeZ` (approach laws). */
-export function advPoseAt(st: Station, time: number, planeZ: number, out: AdvPose): void {
+export function advPoseAt(
+  st: Station,
+  time: number,
+  planeZ: number,
+  out: AdvPose,
+  aim?: Aim,
+): void {
   const u = phase01(time, st.period, st.phase);
   let x = st.cx;
   let y = st.cy;
@@ -189,7 +226,15 @@ export function advPoseAt(st: Station, time: number, planeZ: number, out: AdvPos
   else if (st.motion === MOTION_SWEEP_X) x += st.ax * swing(u);
   else if (st.motion === MOTION_SWEEP_Y) y += st.ay * swing(u);
   else if (st.motion === MOTION_ERUPT) y += st.ay * erupt(u);
-  else if (st.motion === MOTION_BOUNCE_X) x += st.ax * tri(u);
+  else if (st.motion === MOTION_AIM && aim) {
+    if (aim.lockId === st.id) {
+      x = aim.lockX;
+      y = aim.lockY;
+    } else {
+      x = clampTo(aim.x, st.cx, st.ax);
+      y = clampTo(aim.y, st.cy, st.ay);
+    }
+  } else if (st.motion === MOTION_BOUNCE_X) x += st.ax * tri(u);
   else if (st.motion === MOTION_ORBIT) {
     circle(u, tmp2, 0);
     x += st.ax * tmp2[0]!;
@@ -322,7 +367,7 @@ export function decodeStation(
   const z = (gz + 0.2 + 0.6 * unit01(hash2(gz, seg, seed ^ 0xad02))) * p.spacing;
   if (z < C.ADV_START || segmentAt(z).index !== seg) return false;
   let r = p.rMin + (p.rMax - p.rMin) * unit01(hash2(gz, seg, seed ^ 0xad03));
-  const len = p.lenMin + (p.lenMax - p.lenMin) * unit01(hash2(gz, seg, seed ^ 0xad04));
+  let len = p.lenMin + (p.lenMax - p.lenMin) * unit01(hash2(gz, seg, seed ^ 0xad04));
   const arch = ARCHETYPES[p.archetypes[hash2(gz, seg, seed ^ 0xad05) % p.archetypes.length]!]!;
   const shape = arch[0];
   const motion = arch[1];
@@ -383,6 +428,18 @@ export function decodeStation(
     // The envelope's max slope is 10 per period: keep the rise under ERUPT_MAX_STEP.
     const minPeriod = Math.ceil((10 * ay) / ERUPT_MAX_STEP);
     if (period < minPeriod) period = minPeriod;
+  } else if (motion === MOTION_AIM) {
+    // Mirrors the plane inside the core and locks at closeDist: only from ADV_CORE_FROM,
+    // and thin enough in y that a lane above or below the locked body always remains.
+    if (keepCore) return false;
+    const thin = core - 2 * C.ADV_HULL_RY - 3;
+    if (thin < 1.5) return false;
+    if (r > thin) r = thin;
+    if (len > 6) len = 6;
+    cx = sp.cx;
+    cy = sp.coreY;
+    ax = core - 2;
+    ay = core - 2;
   } else if (motion === MOTION_ORBIT) {
     // Orbit around the core outside it: radius ≥ core + body + 2.
     if (need > halfX || need > halfY) return false;
@@ -457,7 +514,7 @@ export function decodeStation(
   out.phase = Math.floor(period * unit01(hash2(gz, seg, seed ^ 0xad07)));
   out.gapMin = p.gapMin;
   out.gapMax = 2 * halfX;
-  out.closeDist = p.closeDist;
+  out.closeDist = p.closeDist; // jaws close and aimed bodies lock inside this distance
   out.core = core;
   out.reach = reach;
   return true;
@@ -533,12 +590,38 @@ export class AdversaryScratch {
   }
 
   /** Poses for every active station at `time`; fills the near list for the hull's z sweep. */
-  posesAt(time: number, planeZ: number, zLo: number, zHi: number): void {
+  /**
+   * The nearest aimed station ahead locks onto the plane's position the first
+   * tick it is within its closeDist; the lock lives in the state (hashed).
+   */
+  lockAim(s: SimState): void {
+    let best = -1;
+    let bestDz = Infinity;
+    for (let i = 0; i < this.count; i++) {
+      const st = this.stations[i]!;
+      if (st.motion !== MOTION_AIM) continue;
+      // A just-passed station keeps its lock until it is out of the collision band,
+      // or it would snap back onto the plane on the very tick of the crossing.
+      const dz = st.z - s.z;
+      if (dz > -st.hz - C.ADV_NEAR_BAND && dz < bestDz) {
+        bestDz = dz;
+        best = i;
+      }
+    }
+    if (best < 0) return;
+    const st = this.stations[best]!;
+    if (st.id === s.advLockId || bestDz > st.closeDist) return;
+    s.advLockId = st.id;
+    s.advLockX = clampTo(s.x, st.cx, st.ax);
+    s.advLockY = clampTo(s.y, st.cy, st.ay);
+  }
+
+  posesAt(time: number, planeZ: number, zLo: number, zHi: number, aim?: Aim): void {
     this.nearCount = 0;
     for (let i = 0; i < this.count; i++) {
       const st = this.stations[i]!;
       if (st.z + st.hz + C.ADV_NEAR_BAND < zLo || st.z - st.hz - C.ADV_NEAR_BAND > zHi) continue;
-      advPoseAt(st, time, planeZ, this.poses[i]!);
+      advPoseAt(st, time, planeZ, this.poses[i]!, aim);
       this.near[this.nearCount++] = i;
     }
   }
