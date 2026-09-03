@@ -56,6 +56,7 @@ export class World {
     pending: number;
     slabs: number;
     workers: number;
+    wasmSlabs: number;
   } {
     const t = this.terrain.stats();
     return {
@@ -66,6 +67,7 @@ export class World {
       pending: t.pending,
       slabs: t.resident,
       workers: this.terrain.workerTotal,
+      wasmSlabs: t.wasmSlabs,
     };
   }
 

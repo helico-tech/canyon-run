@@ -17,4 +17,13 @@ export interface ChunkMessage {
 }
 
 export type FromWorker =
-  ChunkMessage | { type: 'slabDone'; cz: number; chunks: number; candidates: number; ms: number };
+  | ChunkMessage
+  | {
+      type: 'slabDone';
+      cz: number;
+      chunks: number;
+      candidates: number;
+      ms: number;
+      /** True when the wasm field filled this slab's grids (ADR 0009). */
+      wasm: boolean;
+    };

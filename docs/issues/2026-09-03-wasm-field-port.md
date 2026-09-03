@@ -1,8 +1,9 @@
 ---
-status: open
+status: triaged
 priority: P3
 filed: 2026-09-03
 filed-by: agent
+work: CR-0046
 ---
 # Port the density field to wasm for richer detail at top speed
 

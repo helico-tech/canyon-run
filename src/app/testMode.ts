@@ -34,6 +34,7 @@ export interface GameTestApi {
     triangles: number;
     pending: number;
     slabs: number;
+    wasmSlabs: number;
   };
   render(): void;
 }

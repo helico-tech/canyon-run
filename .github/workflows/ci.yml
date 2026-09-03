@@ -13,6 +13,7 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+      - run: rustup target add wasm32-unknown-unknown
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm docs:validate

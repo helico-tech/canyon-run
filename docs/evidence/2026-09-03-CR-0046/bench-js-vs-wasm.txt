@@ -1,0 +1,8 @@
+auto                   js 28.59 ms/chunk  wasm 12.43 ms/chunk  x2.30  full 24439/35937
+canyon                 js 29.68 ms/chunk  wasm 12.71 ms/chunk  x2.33  full 27464/35937
+cave                   js 21.36 ms/chunk  wasm 9.46 ms/chunk  x2.26  full 17056/35937
+crystal-spires         js 25.84 ms/chunk  wasm 11.60 ms/chunk  x2.23  full 24333/35937
+lava-rift              js 23.56 ms/chunk  wasm 10.52 ms/chunk  x2.24  full 22426/35937
+hoodoo-desert          js 28.86 ms/chunk  wasm 13.13 ms/chunk  x2.20  full 24976/35937
+floating-archipelago   js 23.43 ms/chunk  wasm 10.78 ms/chunk  x2.17  full 17011/35937
+trench-run             js 6.27 ms/chunk  wasm 3.28 ms/chunk  x1.91  full 3463/35937

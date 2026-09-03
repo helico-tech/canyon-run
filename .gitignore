@@ -7,3 +7,5 @@ target/
 runs/
 test-results/
 playwright-report/
+src/terrain/field.wasm
+wasm/field/target/

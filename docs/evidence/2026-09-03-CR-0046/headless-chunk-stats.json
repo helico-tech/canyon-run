@@ -1,0 +1,10 @@
+{
+ "resident": 154,
+ "generated": 196,
+ "ms": 5711,
+ "triangles": 402532,
+ "pending": 0,
+ "slabs": 12,
+ "workers": 2,
+ "wasmSlabs": 12
+}

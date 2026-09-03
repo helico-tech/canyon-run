@@ -29,6 +29,13 @@ pnpm preview       # serve dist/
 
 Headless tools need Playwright's Chromium once: `pnpm exec playwright install chromium`.
 
+The terrain workers fill chunks through a small Rust wasm module (ADR 0009);
+`pnpm build`, `pnpm dev` and `pnpm test` build it first, so a Rust toolchain
+with the `wasm32-unknown-unknown` target is required:
+`rustup target add wasm32-unknown-unknown`. The TypeScript field remains the
+oracle and the fallback, and a test proves the two produce identical grids.
+
+
 ## Play
 
 Click to fly (pointer lock). `#seed=XXXX-XXXX` in the URL shares a canyon; the
@@ -109,6 +116,7 @@ field port, gate visibility, HUD biome name).
 ```
 src/sim        deterministic flight model, collision, scoring, replay codec (no DOM, no transcendental Math)
 src/terrain    hash noise, density field, biomes, marching cubes, chunk builder (same rules)
+wasm/field     Rust port of the field's hot path, bit-identical (ADR 0009)
 src/render     three.js adapter: chunks, sky, fog, lights, camera, streaks, shards
 src/app        browser wiring: loop, input, HUD, screens, worker client, test mode
 src/cli        Node entry points

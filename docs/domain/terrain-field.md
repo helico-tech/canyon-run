@@ -68,3 +68,14 @@ bits whether the gather box was one point (simulation) or a whole chunk
 
 Only int32 ops and f64 `+ − × ÷ sqrt floor abs min max`; hashes on integers;
 noise seeds per role are `seed ^ constant`; no time, no caches that change results.
+
+## The same field in wasm (CR-0046, ADR 0009)
+
+The terrain workers fill chunk grids through `wasm/field` (a Rust port of the
+per-sample hot path: noise, biome density, feature and tunnel distances, shell
+skip). TypeScript still blends parameters, computes spines and gathers
+features per row and hands them over as flat arrays (`src/terrain/wasmLayout.ts`,
+`src/app/wasmField.ts`). `src/app/wasmField.test.ts` fills chunks in every
+biome with both fields and requires byte-identical grids, so the TypeScript
+field remains the oracle; it is also the fallback until the module has loaded.
+Per-chunk cost drops 2.2–2.4× (`docs/context/performance.md`).

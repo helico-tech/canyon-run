@@ -6,14 +6,14 @@
   "packageManager": "pnpm@10.0.0",
   "description": "Fast, colourful first-person canyon flyer with deterministic replays",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "pnpm build:wasm && vite",
+    "build": "pnpm build:wasm && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.sim.json --noEmit",
-    "lint": "eslint . --max-warnings 0",
+    "lint": "eslint . --max-warnings 0 && pnpm lint:wasm",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run",
+    "test": "pnpm build:wasm && vitest run",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
     "prepare": "git config core.hooksPath scripts/git-hooks",
     "docs:validate": "node scripts/validate-docs.ts",
@@ -26,7 +26,9 @@
     "headless:golden": "node tools/headless/golden.ts",
     "test:e2e": "pnpm build && playwright test",
     "issue": "node scripts/issues.ts",
-    "adv:audit": "node tools/adversary-audit.ts"
+    "adv:audit": "node tools/adversary-audit.ts",
+    "build:wasm": "cargo build --release --target wasm32-unknown-unknown --manifest-path wasm/field/Cargo.toml && node scripts/copy-wasm.ts",
+    "lint:wasm": "cargo fmt --check --manifest-path wasm/field/Cargo.toml && cargo clippy --release --target wasm32-unknown-unknown --manifest-path wasm/field/Cargo.toml -- -D warnings"
   },
   "dependencies": {
     "three": "0.185.1"

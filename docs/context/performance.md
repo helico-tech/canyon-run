@@ -52,3 +52,28 @@ measured with `scratchpad/bench-workers.ts`:
 the heaviest biome instead of 35–65 %; the ring no longer drains at top speed.
 Headless frame time at 640×360 stays 25–45 ms per frame on SwiftShader
 (validation-grade, not real-time; real GPUs are far faster).
+
+## Density field in wasm (2026-09-03, CR-0046, ADR 0009)
+
+`scratchpad/bench-wasm.ts`: eight chunks per biome (seed 1, across the first
+gate and special segment), three repetitions after warm-up, Node 24 on this
+VM. The wasm grid is byte-identical to the TypeScript grid (differential test
+`src/terrain/wasmField.test.ts`).
+
+| Biome | JS ms / chunk | wasm ms / chunk | speedup | full samples / chunk |
+|---|---|---|---|---|
+| auto (canyon) | 28.9 | 12.5 | 2.32× | 24 439 |
+| canyon | 29.7 | 12.6 | 2.36× | 27 464 |
+| cave | 22.8 | 9.8 | 2.32× | 17 056 |
+| crystal spires | 25.5 | 11.7 | 2.18× | 24 333 |
+| lava rift | 22.7 | 10.1 | 2.25× | 22 426 |
+| hoodoo desert | 29.0 | 12.8 | 2.28× | 24 976 |
+| floating archipelago | 22.0 | 10.1 | 2.17× | 17 011 |
+| trench run | 6.6 | 3.5 | 1.90× | 3 463 |
+
+Reading: with two workers the ring stayed full at 170 u/s only just in the
+wide halls; wasm more than halves the per-chunk cost, so the same budget now
+covers about 2.3× the samples, which is the headroom the wasm-port issue
+asked for (richer octaves, wider halls) without touching the chunk shape.
+The research estimate was 2.9×; the remainder is the per-row descriptor
+traffic and the JavaScript side of the blend, spines and feature gathering.

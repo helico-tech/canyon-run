@@ -166,6 +166,16 @@ export function chunkKey(cx: number, cy: number, cz: number): number {
 }
 
 /** Builds the coloured mesh of a chunk, or null when it has no surface. */
+/** Fills `s.grid` for a chunk; `fillGrid` (TypeScript) or the wasm field (ADR 0009). */
+export type GridFiller = (
+  seed: number,
+  cx: number,
+  cy: number,
+  cz: number,
+  s: ChunkScratch,
+  mode: number,
+) => void;
+
 export function buildChunk(
   seed: number,
   cx: number,
@@ -173,8 +183,9 @@ export function buildChunk(
   cz: number,
   s: ChunkScratch,
   mode = 0,
+  fill: GridFiller = fillGrid,
 ): ChunkMesh | null {
-  fillGrid(seed, cx, cy, cz, s, mode);
+  fill(seed, cx, cy, cz, s, mode);
   const tris = march(s.grid, s.out);
   if (tris === 0) return null;
   const ox = cx * CHUNK_SIZE;

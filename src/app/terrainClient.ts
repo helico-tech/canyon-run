@@ -9,6 +9,8 @@ export interface TerrainStats {
   pending: number;
   generated: number;
   ms: number;
+  /** Slabs whose grids the wasm field filled (ADR 0009). */
+  wasmSlabs: number;
 }
 
 /** Workers to run: slabs are dealt round-robin (even/odd), halving wall time per slab on 4+ cores. */
@@ -25,6 +27,7 @@ export class TerrainClient {
   private evictBelowCz = -Infinity;
   generated = 0;
   generateMs = 0;
+  wasmSlabs = 0;
 
   constructor(seed: number, workers: number = workerCount(), mode = 0) {
     workers = Math.max(1, Math.min(4, Math.floor(workers || workerCount())));
@@ -61,6 +64,7 @@ export class TerrainClient {
       this.generated++;
     } else if (msg.type === 'slabDone') {
       this.generateMs += msg.ms;
+      if (msg.wasm) this.wasmSlabs++;
       this.ring.markDone(msg.cz);
       if (this.ring.idle) for (const w of this.idleWaiters.splice(0)) w();
     }
@@ -94,6 +98,7 @@ export class TerrainClient {
       pending: this.ring.pending,
       generated: this.generated,
       ms: Math.round(this.generateMs),
+      wasmSlabs: this.wasmSlabs,
     };
   }
 
