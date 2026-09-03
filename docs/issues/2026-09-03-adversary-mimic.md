@@ -1,5 +1,5 @@
 ---
-status: triaged
+status: resolved
 priority: P3
 filed: 2026-09-03
 filed-by: agent
@@ -17,3 +17,5 @@ whether reactive bodies read as fair from the cockpit.
 From the EPIC-10 research (`docs/research/2026-09-03-06-adversaries-design.md`).
 
 ## Resolution
+
+**Resolved 2026-09-03** in CR-0045, commit 577cdba. MOTION_AIM: mirror, lock at closeDist, hold; audit over lock positions; flights green.
