@@ -9,7 +9,7 @@ status: done
 `pnpm check` runs typecheck, lint and unit tests; `pnpm build` produces `dist/`.
 
 **Files.** `package.json` (pnpm, exact pins), `vite.config.ts`, `tsconfig.json`
-(app, DOM lib), `tsconfig.sim.json` (`src/sim`, `src/terrain`, `src/cli`:
+(app, DOM lib), `tsconfig.sim.json` (`src/sim`, `src/terrain`; `src/cli` is Node code, checked by the main config:
 `lib: ["ES2022"]`, no DOM), `eslint.config.js` (typescript-eslint;
 `no-restricted-properties` on `Math` transcendentals, `no-restricted-syntax`
 for `**`, `Date`, `performance`, `Math.random` in `src/sim/**` and

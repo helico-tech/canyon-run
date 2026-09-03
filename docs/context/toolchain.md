@@ -14,9 +14,11 @@ TypeScript, Vitest, ESLint + typescript-eslint, Prettier. Exact pins in
 
 ## Two tsconfigs
 
-`tsconfig.json` covers everything with DOM types. `tsconfig.sim.json` re-checks
-`src/sim`, `src/terrain`, `src/cli` with `lib: ["ES2022"]` and no DOM so the
-deterministic core cannot reference `window`, `performance` or `document`.
+`tsconfig.json` covers everything with DOM and Node types. `tsconfig.sim.json`
+re-checks `src/sim` and `src/terrain` with `lib: ["ES2022"]` and no DOM or Node
+types so the deterministic core cannot reference `window`, `performance`,
+`document` or `process`. `src/cli` is a Node adapter and is checked by the
+main config only.
 
 ## Node runs TypeScript directly
 

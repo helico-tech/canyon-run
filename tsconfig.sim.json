@@ -4,6 +4,6 @@
     "lib": ["ES2022"],
     "types": []
   },
-  "include": ["src/sim", "src/terrain", "src/cli"],
+  "include": ["src/sim", "src/terrain"],
   "exclude": ["**/*.test.ts"]
 }

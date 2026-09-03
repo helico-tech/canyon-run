@@ -18,7 +18,10 @@
     "prepare": "git config core.hooksPath scripts/git-hooks",
     "docs:validate": "node scripts/validate-docs.ts",
     "issues": "node scripts/issues.ts",
-    "work:new": "node scripts/new-work-item.ts"
+    "work:new": "node scripts/new-work-item.ts",
+    "sim:validate": "node src/cli/replay.ts validate",
+    "sim:run": "node src/cli/replay.ts run",
+    "sim:regold": "node scripts/regold.ts"
   },
   "dependencies": {
     "three": "0.185.1"

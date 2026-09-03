@@ -1,7 +1,7 @@
 ---
 id: CR-0008
 epic: EPIC-03
-status: todo
+status: done
 ---
 # CR-0008 Replay codec, validator CLI, golden replays
 
