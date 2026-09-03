@@ -1,7 +1,7 @@
 // Keeps the renderer's chunk set in step with the plane: asks the terrain client
 // for the ring around the current slab, uploads delivered chunks (budgeted per
 // frame in real time, all at once when settling), and evicts behind.
-import type { Renderer } from '../render/renderer.ts';
+import type { GameRenderer } from '../render/renderer.ts';
 import { CHUNK_SIZE } from '../terrain/march.ts';
 import { TerrainClient } from './terrainClient.ts';
 
@@ -9,10 +9,10 @@ export const UPLOADS_PER_FRAME = 4;
 
 export class World {
   seed: number;
-  private readonly renderer: Renderer;
+  private readonly renderer: GameRenderer;
   private terrain: TerrainClient;
 
-  constructor(seed: number, renderer: Renderer) {
+  constructor(seed: number, renderer: GameRenderer) {
     this.seed = seed;
     this.renderer = renderer;
     this.terrain = new TerrainClient(seed);

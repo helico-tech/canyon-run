@@ -1,7 +1,7 @@
 ---
 id: CR-0015
 epic: EPIC-05
-status: todo
+status: done
 ---
 # CR-0015 In-browser replay and cross-engine test
 
@@ -15,3 +15,8 @@ status: todo
 - Cross-engine spec is part of `pnpm test:e2e`.
 
 **Verification.** `pnpm test:e2e`.
+
+**Delivered notes.** `?nogl=1` runs the sim with a null renderer so engines
+without WebGL (headless Firefox here) can still replay goldens. Copy-to-
+clipboard replaces a download button. Evidence in
+`docs/evidence/2026-09-03-CR-0015/`.

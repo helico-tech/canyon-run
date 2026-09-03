@@ -11,6 +11,8 @@ import { createScreens } from './screens.ts';
 import { hashForSeed, parseSeed, randomSeed, seedFromHash } from './seed.ts';
 import { browserStorage } from './storage.ts';
 import { installTestApi, isTestMode } from './testMode.ts';
+import { isReplay } from '../sim/replay.ts';
+import type { Replay } from '../sim/replay.ts';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('missing #root');
@@ -21,18 +23,36 @@ const hint = document.getElementById('hint');
 const params = new URLSearchParams(window.location.search);
 const test = isTestMode();
 const debug = params.get('debug') === '1';
+const nogl = params.get('nogl') === '1';
 const storage = browserStorage();
 const seed =
   (params.get('seed') !== null ? parseSeed(params.get('seed')!) : null) ??
   seedFromHash(window.location.hash) ??
   storage.lastSeed() ??
   randomSeed();
+const replayUrl = params.get('replay');
+let pendingReplay: Replay | null = isReplay(window.__replay) ? window.__replay : null;
+if (replayUrl && !pendingReplay) {
+  try {
+    const fetched: unknown = await (await fetch(replayUrl)).json();
+    if (isReplay(fetched)) pendingReplay = fetched;
+    else console.error('replay: not a canyon-replay/1 file');
+  } catch (err) {
+    console.error('replay: failed to load', err);
+  }
+}
 const width = Number(params.get('w') ?? (test ? 640 : window.innerWidth));
 const height = Number(params.get('h') ?? (test ? 360 : window.innerHeight));
 canvas.width = width;
 canvas.height = height;
 
-const game = new Game(canvas, { seed, width, height, preserveDrawingBuffer: test });
+const game = new Game(canvas, {
+  seed: pendingReplay?.seed ?? seed,
+  width,
+  height,
+  preserveDrawingBuffer: test,
+  nogl,
+});
 const hud = createHud(root);
 let hudProbe = new HudProbe(seed);
 let hudClock = 0;
@@ -46,10 +66,11 @@ const applySeed = (s: number): void => {
   storage.setLastSeed(s);
   if (!test) history.replaceState(null, '', hashForSeed(s));
 };
-applySeed(seed);
+applySeed(game.seed);
 
 if (test) {
   installTestApi(game, canvas, SIM_VERSION);
+  if (pendingReplay) game.loadReplay(pendingReplay);
   game.start();
   game.render();
 } else {
@@ -70,7 +91,21 @@ if (test) {
     requestLock(canvas);
   };
   screens.onStart((text) => begin(parseSeed(text) ?? game.seed));
-  screens.showStart(seed, storage.best()?.score ?? null);
+  screens.onCopyReplay(async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(game.replay({ recordedBy: 'browser' })));
+      return true;
+    } catch {
+      return false;
+    }
+  });
+  if (pendingReplay) {
+    game.loadReplay(pendingReplay);
+    sampler.enabled = false;
+    game.start();
+  } else {
+    screens.showStart(game.seed, storage.best()?.score ?? null);
+  }
 
   game.onDeath = (state) => {
     sampler.enabled = false;

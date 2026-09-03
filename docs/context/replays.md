@@ -29,3 +29,15 @@ pnpm sim:regold                               # regenerate tests/replays/*.json 
 replays them; any behavioural change in `src/sim` or `src/terrain` breaks them
 by design. Regenerate with `pnpm sim:regold`, which refuses on a dirty tree and
 bumps `SIM_VERSION`, so the change is visible in review.
+
+## In the browser
+
+- Every run is recorded (`Game.replay()`); the run-over panel's **copy replay**
+  button puts the JSON on the clipboard, and `window.__game.replay()` returns
+  it in test or debug mode.
+- Playback: `?replay=<url>` fetches a replay file (the replay's seed wins over
+  the URL seed), or inject `window.__replay` before load. The HUD shows a
+  replay badge and player input is ignored.
+- `tests/e2e/cross-engine.spec.ts` replays the goldens in headless Chromium
+  (and Firefox when it can launch) and compares the final checksum and score
+  with the file, and validates a browser-recorded replay in Node.

@@ -127,3 +127,20 @@
     opacity: 0.45;
   }
 }
+.screen .copy {
+  margin-top: 12px;
+  padding: 6px 12px;
+  background: transparent;
+  color: #f4e8ff;
+  border: 1px solid rgba(244, 232, 255, 0.5);
+  font: inherit;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.screen .copy:hover {
+  border-color: #2ee6d6;
+  color: #2ee6d6;
+}

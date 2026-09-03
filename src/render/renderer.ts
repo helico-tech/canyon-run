@@ -15,7 +15,24 @@ export interface RendererOptions {
   pixelRatio?: number;
 }
 
-export class Renderer {
+/** What the game and the world need from a renderer (three.js or a null stand-in). */
+export interface GameRenderer {
+  readonly info: { renderer: string; vendor: string; version: string };
+  setAtmosphere(a: Atmosphere): void;
+  addChunk(chunk: ChunkMesh): void;
+  hasChunk(cx: number, cy: number, cz: number): boolean;
+  removeChunk(cx: number, cy: number, cz: number): void;
+  evictBelow(minCz: number): number;
+  readonly chunkCount: number;
+  triangleCount(): number;
+  resize(width: number, height: number): void;
+  render(pose: RenderPose): void;
+  readPixel(x: number, y: number): [number, number, number, number];
+  frameHash(): number;
+  dispose(): void;
+}
+
+export class Renderer implements GameRenderer {
   readonly gl: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
   readonly camera: THREE.PerspectiveCamera;

@@ -17,6 +17,7 @@ export interface Screens {
   showRunOver(data: RunOverData): void;
   hideRunOver(): void;
   onStart(handler: (seedText: string) => void): void;
+  onCopyReplay(handler: () => Promise<boolean>): void;
   readonly startVisible: boolean;
   readonly runOverVisible: boolean;
 }
@@ -53,6 +54,7 @@ export function createScreens(parent: HTMLElement): Screens {
       </table>
       <p class="seed"></p>
       <p class="cta"><b>R</b> fly again · <b>N</b> new canyon</p>
+      <button class="copy" type="button">copy replay</button>
     </div>`;
   start.hidden = true;
   over.hidden = true;
@@ -69,7 +71,18 @@ export function createScreens(parent: HTMLElement): Screens {
     if (e.key === 'Enter') startHandler?.(seedInput.value);
   });
   const q = (root: HTMLElement, sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!;
+  const copyBtn = over.querySelector<HTMLButtonElement>('.copy')!;
+  let copyHandler: (() => Promise<boolean>) | null = null;
+  copyBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const ok = copyHandler ? await copyHandler() : false;
+    copyBtn.textContent = ok ? 'copied' : 'copy failed';
+    window.setTimeout(() => (copyBtn.textContent = 'copy replay'), 1500);
+  });
   return {
+    onCopyReplay(handler) {
+      copyHandler = handler;
+    },
     get startVisible() {
       return !start.hidden;
     },

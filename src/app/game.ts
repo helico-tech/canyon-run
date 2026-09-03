@@ -3,11 +3,14 @@
 import { atmosphereFor } from '../render/atmosphere.ts';
 import type { RenderPose } from '../render/camera.ts';
 import { Renderer } from '../render/renderer.ts';
+import type { GameRenderer } from '../render/renderer.ts';
+import { NullRenderer } from '../render/nullRenderer.ts';
 import { C } from '../sim/constants.ts';
 import type { InputFrame } from '../sim/input.ts';
 import { ZERO_INPUT } from '../sim/input.ts';
 import { createPilot } from '../sim/pilot.ts';
-import { decodeRuns, isReplay } from '../sim/replay.ts';
+import { decodeRuns, isReplay, Recorder } from '../sim/replay.ts';
+import type { Replay } from '../sim/replay.ts';
 import { checksum, cloneState, copyState, createState } from '../sim/state.ts';
 import type { SimState } from '../sim/state.ts';
 import { step, StepScratch } from '../sim/step.ts';
@@ -19,13 +22,15 @@ export interface GameOptions {
   width: number;
   height: number;
   preserveDrawingBuffer?: boolean;
+  /** Sim only, no WebGL (cross-engine tests). */
+  nogl?: boolean;
 }
 
 export type InputSource = (s: SimState) => InputFrame;
 export type Phase = 'idle' | 'running' | 'dead';
 
 export class Game {
-  readonly renderer: Renderer;
+  readonly renderer: GameRenderer;
   readonly world: World;
   state: SimState;
   /** State before the last tick, for render interpolation. */
@@ -41,20 +46,29 @@ export class Game {
   replayLabel: string | null = null;
   phase: Phase = 'idle';
   topSpeed = 0;
+  private recorder: Recorder;
 
   constructor(canvas: HTMLCanvasElement, opts: GameOptions) {
-    this.renderer = new Renderer(canvas, {
-      width: opts.width,
-      height: opts.height,
-      preserveDrawingBuffer: opts.preserveDrawingBuffer ?? false,
-    });
+    this.renderer = opts.nogl
+      ? new NullRenderer()
+      : new Renderer(canvas, {
+          width: opts.width,
+          height: opts.height,
+          preserveDrawingBuffer: opts.preserveDrawingBuffer ?? false,
+        });
     this.renderer.setAtmosphere(atmosphereFor(CANYON_PALETTE));
     this.state = createState(opts.seed);
     this.prev = cloneState(this.state);
     this.scratch = new StepScratch(opts.seed);
     this.source = createPilot(opts.seed);
+    this.recorder = new Recorder(opts.seed);
     this.world = new World(opts.seed, this.renderer);
     this.world.update(this.state.z);
+  }
+
+  /** The current run as a replay (valid for the validator at any point). */
+  replay(meta?: Record<string, unknown>): Replay {
+    return this.recorder.finish(this.state, meta);
   }
 
   get seed(): number {
@@ -93,6 +107,7 @@ export class Game {
   tick(input: InputFrame): void {
     copyState(this.prev, this.state);
     step(this.state, input, this.scratch);
+    this.recorder.push(input, this.state);
     if (this.state.speed > this.topSpeed) this.topSpeed = this.state.speed;
     if (this.state.alive === 0 && this.phase !== 'dead') {
       this.phase = 'dead';
@@ -110,6 +125,7 @@ export class Game {
     this.state = createState(s);
     this.prev = cloneState(this.state);
     this.scratch = new StepScratch(s);
+    this.recorder = new Recorder(s);
     this.topSpeed = 0;
     this.replayLabel = null;
     this.forcedInput = null;
