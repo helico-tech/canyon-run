@@ -231,8 +231,10 @@ export function step(
       eventPoints = C.DODGE_BONUS;
     }
   }
-  // Passing a biome gate (segment boundary) while alive pays a bonus.
-  if (s.alive && segmentAt(s.z).index > segBefore) {
+  // Passing a biome gate pays once per segment: a loop back through it pays nothing.
+  const segNow = segmentAt(s.z).index;
+  if (s.alive && segNow > s.gateSeg) {
+    s.gateSeg = segNow;
     eventId = 4;
     eventPoints = C.GATE_BONUS;
   }

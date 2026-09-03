@@ -1,8 +1,9 @@
 ---
-status: open
+status: triaged
 priority: P2
 filed: 2026-09-03
 filed-by: agent
+work: CR-0035
 ---
 # GATE bonus pays on every forward re-crossing of a segment boundary
 

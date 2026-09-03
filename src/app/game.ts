@@ -1,5 +1,6 @@
 // Game object: owns the sim state, the world ring and the renderer. Input comes
 // from a source: the player's sampler, the scripted pilot, or a replay.
+import { segmentAt } from '../terrain/biomes.ts';
 import { atmosphereFor, atmosphereAtZ } from '../render/atmosphere.ts';
 import type { RenderPose } from '../render/camera.ts';
 import { Renderer } from '../render/renderer.ts';
@@ -219,6 +220,8 @@ export class Game {
     this.state.x = x;
     this.state.y = y;
     this.state.z = z;
+    // A teleport is not a crossing: the gate latch follows it so no bonus is paid.
+    this.state.gateSeg = segmentAt(z).index;
     copyState(this.prev, this.state);
   }
 

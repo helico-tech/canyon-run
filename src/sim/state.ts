@@ -32,7 +32,9 @@ export interface SimState {
   streakTicks: number;
   graceTicks: number;
   cooldown: number;
-  /** Last score event for the HUD: 0 none, 1 CLOSE, 2 SO CLOSE, 3 THREADED, 4 GATE. */
+  /** Highest segment whose gate has paid (latched so a re-crossing pays nothing). */
+  gateSeg: number;
+  /** Last score event for the HUD: 0 none, 1 CLOSE, 2 SO CLOSE, 3 THREADED, 4 GATE, 5 DODGED. */
   eventId: number;
   eventTick: number;
   eventPoints: number;
@@ -68,6 +70,7 @@ export function createState(seed: number, biomeMode = 0): SimState {
     streakTicks: 0,
     graceTicks: 0,
     cooldown: 0,
+    gateSeg: 0,
     eventId: 0,
     eventTick: 0,
     eventPoints: 0,
@@ -103,6 +106,7 @@ export function copyState(dst: SimState, src: SimState): void {
   dst.threadTicks = src.threadTicks;
   dst.streakTicks = src.streakTicks;
   dst.graceTicks = src.graceTicks;
+  dst.gateSeg = src.gateSeg;
   dst.cooldown = src.cooldown;
   dst.eventId = src.eventId;
   dst.eventTick = src.eventTick;
@@ -145,6 +149,7 @@ export function checksum(s: SimState): number {
       s.streakTicks,
       s.graceTicks,
       s.cooldown,
+      s.gateSeg,
       s.eventId,
       s.eventTick,
       s.biomeMode,

@@ -1,3 +1,4 @@
+import { SEGMENT_HUB } from '../terrain/biomes.ts';
 import { expect, test } from 'vitest';
 import { CANYON } from '../terrain/params.ts';
 import { spine } from '../terrain/spine.ts';
@@ -247,3 +248,20 @@ function scoreRateFor(s: ReturnType<typeof createState>): number {
     (1 + C.PROX_BONUS * s.proximity + C.STREAK_BONUS * streak)
   );
 }
+
+test('GATE pays once per segment even when the boundary is re-crossed', () => {
+  const s = createState(1, 0);
+  const scratch = new StepScratch(1, { ghost: true, mode: 0 });
+  let gates = 0;
+  const cross = () => {
+    s.z = SEGMENT_HUB - 30;
+    for (let i = 0; i < 120; i++) {
+      step(s, ZERO_INPUT, scratch);
+      if (s.eventId === 4 && s.eventTick === s.tick - 1) gates++;
+    }
+    expect(s.z).toBeGreaterThan(SEGMENT_HUB);
+  };
+  cross();
+  cross();
+  expect(gates).toBe(1);
+});

@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'vitest';
-import { CANYON_BIOME, SPECIALS, SEGMENT_HUB } from '../terrain/biomes.ts';
+import { CANYON_BIOME, SPECIALS, SEGMENT_HUB, segmentAt } from '../terrain/biomes.ts';
 import type { BiomeDef } from '../terrain/biomes.ts';
 import { spineAt } from '../terrain/field.ts';
 import { CANYON } from '../terrain/params.ts';
@@ -194,6 +194,7 @@ test('teleporting into a body kills; passing beside a hoop pays DODGED once', ()
   const d = createState(seed);
   const ds = new StepScratch(seed, { ghost: true });
   d.z = st.z - 2;
+  d.gateSeg = segmentAt(d.z).index; // a teleport, not a crossing
   d.speed = 150;
   d.throttle = 1;
   advPoseAt(st, d.tick + 1, d.z, pose);
