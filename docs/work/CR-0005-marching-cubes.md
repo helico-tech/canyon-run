@@ -1,7 +1,7 @@
 ---
 id: CR-0005
 epic: EPIC-02
-status: todo
+status: done
 ---
 # CR-0005 Marching cubes
 
@@ -16,3 +16,9 @@ status: todo
 - Output capped at `MAX_TRIS_PER_CHUNK = 12000` with a clear error when exceeded.
 
 **Verification.** `pnpm check`.
+
+**Delivered notes.** Tables are generated at load from the face-pairing rule
+and validated by the test (820 triangles, Bourke edge prefix). The cube-index
+bit is set for ROCK corners (the generator's convention); winding faces air.
+Seam vertices match after f32 rounding (compared at 1e-3), since chunk-local
+storage puts the shared plane at local 64 in one chunk and 0 in the other.
