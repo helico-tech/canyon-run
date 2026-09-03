@@ -1,5 +1,5 @@
 ---
-status: triaged
+status: resolved
 priority: P3
 filed: 2026-09-03
 filed-by: agent
@@ -17,3 +17,5 @@ mirroring the validator. Reported by the code-review sweep (angle B).
 
 
 ## Resolution
+
+**Resolved 2026-09-03** in CR-0037, commit debca36. replaySource bounds playback to ticks; test added.
