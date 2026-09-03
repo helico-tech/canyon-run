@@ -14,13 +14,18 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
+    "prepare": "git config core.hooksPath scripts/git-hooks",
+    "docs:validate": "node scripts/validate-docs.ts",
+    "issues": "node scripts/issues.ts",
+    "work:new": "node scripts/new-work-item.ts"
   },
   "dependencies": {
     "three": "0.185.1"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@types/node": "24.13.3",
     "@types/three": "0.185.4",
     "eslint": "10.9.1",
     "globals": "17.12.0",

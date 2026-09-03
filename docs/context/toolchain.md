@@ -29,3 +29,17 @@ globals. `src/sim/lint-gate.test.ts` proves the rules fire. See ADR 0002.
 - TypeScript 7.0.2 is the registry `latest`, but typescript-eslint 8.69 supports
   `>=4.8.4 <6.1.0`, so the project pins TypeScript 6.0.3.
 - `*.md` and `docs/` are excluded from Prettier: research reports are kept verbatim.
+
+## Repo scripts (TypeScript, run by Node directly)
+
+| Command | Purpose |
+|---|---|
+| `pnpm work:new EPIC-NN slug --title "..."` | allocates the next `CR-NNNN` story file in `docs/work/` |
+| `pnpm issues new slug --priority P2 --title "..."` | files an issue in `docs/issues/` with generated frontmatter |
+| `pnpm issues list [--status open]` | queue, highest priority first, oldest first within a priority |
+| `pnpm issues triage <file> --work CR-NNNN` | promotes an issue to a unit of work |
+| `pnpm issues resolve <file> --work CR-NNNN --commit <sha> --note "..."` | resolves in place |
+| `pnpm docs:validate` | layout and frontmatter validation (also run by the pre-push hook) |
+
+The pre-push hook (`scripts/git-hooks/pre-push`, installed by `pnpm install`
+through `prepare`) runs `pnpm check` and `pnpm docs:validate`.

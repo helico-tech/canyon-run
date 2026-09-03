@@ -1,7 +1,7 @@
 ---
 id: CR-0002
 epic: EPIC-01
-status: todo
+status: done
 ---
 # CR-0002 Repo scripts and pre-push hook
 
