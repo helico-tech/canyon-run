@@ -1,6 +1,6 @@
 ---
 id: EPIC-07
-status: todo
+status: in-progress
 ---
 # EPIC-07 Game feel
 

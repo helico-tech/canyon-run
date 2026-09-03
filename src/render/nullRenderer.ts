@@ -9,6 +9,7 @@ export class NullRenderer implements GameRenderer {
   private readonly chunks = new Map<string, number>();
 
   setAtmosphere(_a: Atmosphere): void {}
+  setSeed(_seed: number): void {}
   addChunk(chunk: ChunkMesh): void {
     this.chunks.set(`${chunk.cx},${chunk.cy},${chunk.cz}`, chunk.tris);
   }

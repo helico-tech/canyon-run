@@ -191,3 +191,9 @@
 #hud .dead[hidden] {
   display: none;
 }
+#hud .vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.9) 100%);
+  opacity: 0.15;
+}

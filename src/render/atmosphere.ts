@@ -14,6 +14,7 @@ export interface Atmosphere {
   sunDir: readonly [number, number, number];
   ambient: Rgb;
   ground: Rgb;
+  accent?: Rgb;
 }
 
 export function atmosphereFor(p: BiomePalette): Atmosphere {
@@ -49,5 +50,6 @@ export function atmosphereAtZ(seed: number, z: number): Atmosphere {
     sunDir: SUN_DIR,
     ambient: a.ambient,
     ground: a.ground,
+    accent: a.accent,
   };
 }

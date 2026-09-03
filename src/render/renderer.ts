@@ -7,6 +7,7 @@ import type { RenderPose } from './camera.ts';
 import { applyPose } from './camera.ts';
 import { chunkId, createTerrainMaterial, disposeMesh, toThreeMesh } from './chunkMesh.ts';
 import { Sky } from './sky.ts';
+import { Streaks } from './streaks.ts';
 
 export interface RendererOptions {
   width: number;
@@ -18,6 +19,7 @@ export interface RendererOptions {
 /** What the game and the world need from a renderer (three.js or a null stand-in). */
 export interface GameRenderer {
   readonly info: { renderer: string; vendor: string; version: string };
+  setSeed(seed: number): void;
   setAtmosphere(a: Atmosphere): void;
   addChunk(chunk: ChunkMesh): void;
   hasChunk(cx: number, cy: number, cz: number): boolean;
@@ -38,6 +40,9 @@ export class Renderer implements GameRenderer {
   readonly camera: THREE.PerspectiveCamera;
   readonly info: { renderer: string; vendor: string; version: string };
   private readonly sky = new Sky();
+  private streaks: Streaks | null = null;
+  private travel = 0;
+  private lastTime = Number.NaN;
   private readonly sun = new THREE.DirectionalLight(0xffffff, 2);
   private readonly hemi = new THREE.HemisphereLight(0xffffff, 0x808080, 1);
   private readonly fog = new THREE.FogExp2(0xff9a5c, 0.004);
@@ -77,8 +82,19 @@ export class Renderer implements GameRenderer {
     };
   }
 
+  /** Installs the speed streaks for a seed (layout is seeded so frames stay deterministic). */
+  setSeed(seed: number): void {
+    if (this.streaks) this.scene.remove(this.streaks.lines);
+    this.streaks = new Streaks(seed);
+    this.scene.add(this.streaks.lines);
+    this.travel = 0;
+    this.lastTime = Number.NaN;
+  }
+
   setAtmosphere(a: Atmosphere): void {
     this.sky.apply(a);
+    if (this.streaks && a.accent)
+      this.streaks.setColour(a.accent[0] / 255, a.accent[1] / 255, a.accent[2] / 255);
     const [hr, hg, hb] = rgbToFloat(a.horizon);
     this.fog.color.setRGB(hr, hg, hb);
     this.fog.density = a.fogDensity;
@@ -152,6 +168,13 @@ export class Renderer implements GameRenderer {
   render(pose: RenderPose): void {
     applyPose(this.camera, pose);
     this.sky.follow(pose.x, pose.y, pose.z);
+    if (this.streaks) {
+      // Travel advances with sim time so the same replay always draws the same streaks.
+      const dt = Number.isNaN(this.lastTime) ? 0 : Math.max(0, pose.time - this.lastTime) / 60;
+      this.lastTime = pose.time;
+      this.travel += pose.speed * dt;
+      this.streaks.update(pose, this.camera.quaternion, this.travel, pose.speed);
+    }
     this.gl.render(this.scene, this.camera);
   }
 

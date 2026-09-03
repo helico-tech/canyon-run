@@ -56,6 +56,7 @@ export class Game {
           height: opts.height,
           preserveDrawingBuffer: opts.preserveDrawingBuffer ?? false,
         });
+    this.renderer.setSeed(opts.seed);
     this.renderer.setAtmosphere(atmosphereFor(CANYON_PALETTE));
     this.state = createState(opts.seed);
     this.prev = cloneState(this.state);
@@ -131,6 +132,7 @@ export class Game {
     this.forcedInput = null;
     this.world.reset(s);
     this.world.update(this.state.z);
+    this.renderer.setSeed(s);
     this.phase = 'running';
   }
 
@@ -179,6 +181,12 @@ export class Game {
       qz: qz * inv,
       qw: qw * inv,
       tV: (speed - C.MIN_SPEED) / (C.MAX_SPEED - C.MIN_SPEED),
+      rollRate: a.rollRate + (b.rollRate - a.rollRate) * t,
+      pitchRate: a.pitchRate + (b.pitchRate - a.pitchRate) * t,
+      yawRate: a.yawRate + (b.yawRate - a.yawRate) * t,
+      proximity: a.proximity + (b.proximity - a.proximity) * t,
+      time: a.tick + t,
+      speed,
     };
   }
 

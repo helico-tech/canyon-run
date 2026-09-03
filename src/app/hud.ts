@@ -65,7 +65,8 @@ export function createHud(parent: HTMLElement): Hud {
   replay.hidden = true;
   const dead = el('div', 'dead', 'crashed');
   dead.hidden = true;
-  root.append(score, speed, alt, horizon, reticle, ...glows, seedEl, replay, dead);
+  const vignette = el('div', 'vignette');
+  root.append(vignette, score, speed, alt, horizon, reticle, ...glows, seedEl, replay, dead);
   parent.appendChild(root);
 
   const b = new Float64Array(9);
@@ -81,6 +82,7 @@ export function createHud(parent: HTMLElement): Hud {
         1,
       );
       speedFill.style.transform = `scaleX(${tV.toFixed(3)})`;
+      vignette.style.opacity = (0.15 + 0.35 * tV).toFixed(3);
       marker.style.top = `${((1 - Math.min(Math.max(view.altitude, 0), 1)) * 100).toFixed(1)}%`;
       basis(state.qx, state.qy, state.qz, state.qw, b);
       // Roll from the right vector (right is -X at level): bank = atan2(-right.y, -right.x).

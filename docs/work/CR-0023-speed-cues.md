@@ -1,7 +1,7 @@
 ---
 id: CR-0023
 epic: EPIC-07
-status: todo
+status: done
 ---
 # CR-0023 Speed cues: FOV, streaks, vignette, lean and shake
 
@@ -12,3 +12,8 @@ status: todo
 **Acceptance.** Sim checksums unchanged (render-only). Streaks invisible below `t_v = 0.2`. Headless sheet at min and max speed shows the difference. Frame gate still passes.
 
 **Verification.** `pnpm check`, goldens unchanged, sheet in `docs/evidence/`.
+
+**Delivered notes.** Camera lean comes straight from the sim's filtered rates
+(no extra spring: the rates are already first-order filtered). Streak scroll
+and shake noise are driven by the sim tick, so headless frames stay
+deterministic. Evidence in `docs/evidence/2026-09-03-CR-0023/`.
