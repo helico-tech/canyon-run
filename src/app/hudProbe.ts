@@ -1,6 +1,7 @@
 // Render-side proximity per side for the HUD edge glows. Samples the same field
 // the sim uses, but nothing here feeds back into the sim.
 import { FieldSampler, spineAt } from '../terrain/field.ts';
+import { biomeForSegment, segmentAt } from '../terrain/biomes.ts';
 import { C } from '../sim/constants.ts';
 import { basis } from '../sim/quat.ts';
 import type { SimState } from '../sim/state.ts';
@@ -8,6 +9,8 @@ import type { HudView } from './hud.ts';
 
 const PROBE_DIST = 8;
 const GLOW_RANGE = 10;
+/** The gate countdown appears this far before a segment boundary (u). */
+export const GATE_CUE_RANGE = 400;
 
 export class HudProbe {
   private readonly sampler: FieldSampler;
@@ -24,6 +27,7 @@ export class HudProbe {
     extra?: (x: number, y: number, z: number) => number,
   ): HudView {
     const sp = spineAt(state.seed, state.z, undefined, this.mode);
+    const seg = segmentAt(state.z);
     const ceiling = sp.ceilY - C.CEIL_MARGIN;
     const altitude = (state.y - sp.floorY) / (ceiling - sp.floorY);
     const r = PROBE_DIST + 2;
@@ -51,6 +55,8 @@ export class HudProbe {
         near(-b[3]!, -b[4]!, -b[5]!),
       ],
       replayLabel,
+      biome: biomeForSegment(state.seed, seg.index, this.mode).name,
+      gateIn: seg.end - state.z <= GATE_CUE_RANGE ? seg.end - state.z : -1,
     };
   }
 }

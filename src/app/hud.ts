@@ -11,6 +11,10 @@ export interface HudView {
   /** Proximity per side [left, right, up, down] in [0, 1]. */
   glow: [number, number, number, number];
   replayLabel: string | null;
+  /** Name of the biome of the current segment. */
+  biome: string;
+  /** Distance to the next gate in u while inside the cue range, else -1. */
+  gateIn: number;
 }
 
 export interface Hud {
@@ -55,6 +59,9 @@ export function createHud(parent: HTMLElement): Hud {
   const reticle = el('div', 'reticle');
   const glows = (['l', 'r', 't', 'b'] as const).map((side) => el('div', `glow ${side}`));
   const seedEl = el('div', 'seed', 'seed 0000-0000');
+  const biomeEl = el('div', 'biome', '');
+  const gateEl = el('div', 'gate', '');
+  gateEl.hidden = true;
   const replay = el('div', 'replay', 'replay');
   replay.hidden = true;
   const dead = el('div', 'dead', 'crashed');
@@ -72,6 +79,8 @@ export function createHud(parent: HTMLElement): Hud {
     reticle,
     ...glows,
     seedEl,
+    biomeEl,
+    gateEl,
     replay,
     dead,
     callouts,
@@ -133,6 +142,9 @@ export function createHud(parent: HTMLElement): Hud {
         mult.textContent = `x${(scoreRate(state) * scoreFactor(state)).toFixed(1)}`;
         speedValue.textContent = `${Math.round(state.speed)}`;
         if (view.replayLabel !== null) replay.textContent = view.replayLabel;
+        biomeEl.textContent = view.biome;
+        gateEl.hidden = view.gateIn < 0;
+        if (view.gateIn >= 0) gateEl.textContent = `gate in ${Math.round(view.gateIn)} u`;
       }
     },
   };

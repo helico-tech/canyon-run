@@ -28,6 +28,9 @@ only transforms, opacity and (at 15 Hz) text change, so there is no layout thras
   below the plane (`HudProbe`); they never feed back into the sim.
 - **Seed** is shown as `XXXX-XXXX` hex; **replay** badge appears during playback;
   **CRASHED** appears when `alive = 0` (the run-over panel is CR-0014).
+- **Biome** label above the seed names the current segment's biome; a centred
+  **gate in N u** countdown appears within 400 u of a segment boundary
+  (`GATE_CUE_RANGE`, CR-0039) so the difficulty step is announced.
 
 Headless runs capture page screenshots (canvas + HUD); the gate checks the
 altitude bar's border pixel so a missing HUD fails the run.

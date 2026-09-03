@@ -167,6 +167,30 @@
   opacity: 0.85;
   text-align: right;
 }
+#hud .biome {
+  position: absolute;
+  right: 24px;
+  bottom: 42px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  text-align: right;
+}
+#hud .gate {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ffd23f;
+  text-shadow: 0 0 8px rgba(255, 210, 63, 0.7);
+}
+#hud .gate[hidden] {
+  display: none;
+}
 #hud .replay {
   position: absolute;
   left: 24px;
