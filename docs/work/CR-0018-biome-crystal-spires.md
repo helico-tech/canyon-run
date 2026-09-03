@@ -1,7 +1,7 @@
 ---
 id: CR-0018
 epic: EPIC-06
-status: todo
+status: done
 ---
 # CR-0018 Biome: crystal-spires
 
@@ -16,3 +16,8 @@ status: todo
 - Existing goldens still pass (canyon segments unchanged).
 
 **Verification.** `pnpm check`, headless sheet, goldens.
+
+**Delivered notes.** Crystals are a rock feature kind (`FEATURE_CRYSTAL`): hex
+prisms tilted by (cos, sin) literals; faces within 1.2 u of a crystal take the
+crystal tint from the palette. `tools/biome-seeds.ts` maps seeds to biomes.
+Goldens regenerated (SIM_VERSION 0.1.3). Evidence in `docs/evidence/2026-09-03-CR-0018/`.

@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest';
+import { biomeForSegment, SPECIALS } from './biomes.ts';
 import { buildChunk, createChunkScratch, fillGrid, slabCandidates } from './chunk.ts';
 import { CHUNK_SIZE, MAX_TRIS_PER_CHUNK } from './march.ts';
 import { CANYON } from './params.ts';
@@ -109,7 +110,31 @@ test('fillGrid marks the guaranteed core as air at the chunk containing the spin
   expect(air).toBeGreaterThan(1000);
 });
 
-test('a special-biome slab stays inside the triangle budget', () => {
+test('every special biome stays inside the triangle budget', () => {
+  for (const special of SPECIALS) {
+    let seed = 1;
+    while (biomeForSegment(seed, 1) !== special) seed++;
+    let total = 0;
+    let maxTris = 0;
+    for (let cz = 30; cz < 34; cz++) {
+      for (const [cx, cy] of slabCandidates(seed, cz)) {
+        const m = buildChunk(seed, cx, cy, cz, scratch);
+        if (!m) continue;
+        total += m.tris;
+        maxTris = Math.max(maxTris, m.tris);
+        expect(m.tris, `${special.name} chunk ${cx},${cy},${cz}`).toBeLessThanOrEqual(
+          MAX_TRIS_PER_CHUNK,
+        );
+      }
+    }
+    console.info(
+      `${special.name} (seed ${seed}): ${total} tris over 4 slabs, max ${maxTris} per chunk`,
+    );
+    expect(total).toBeGreaterThan(5000);
+  }
+});
+
+test('a special-biome slab stays inside the triangle budget (seed 1)', () => {
   const seed = 1;
   let total = 0;
   for (let cz = 30; cz < 34; cz++) {

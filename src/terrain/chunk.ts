@@ -2,6 +2,7 @@
 // colours. Output is a pure function of (seed, cx, cy, cz).
 import { blendAt } from './biomes.ts';
 import { faceColour } from './colour.ts';
+import { crystalNear } from './features.ts';
 import { FieldContext } from './field.ts';
 import {
   CELL_SIZE,
@@ -194,6 +195,11 @@ export function buildChunk(
     const { a, b, t: bt } = ctx.blend;
     const params = a === b || bt === 0 ? a.params : ctx.blend.params;
     spine(seed, wz, params, sp);
+    let tint = -1;
+    if (a.palette.crystals) {
+      const c = crystalNear(wx, wy, wz, ctx.featsA, 1.2);
+      if (c) tint = c.tint;
+    }
     faceColour(
       seed,
       params,
@@ -209,6 +215,7 @@ export function buildChunk(
       key,
       rgba,
       t * 12,
+      tint,
     );
     rgba.copyWithin(t * 12 + 4, t * 12, t * 12 + 4);
     rgba.copyWithin(t * 12 + 8, t * 12, t * 12 + 4);

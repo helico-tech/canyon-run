@@ -39,3 +39,4 @@ height, coreYFrac, detail amplitudes and feature settings are per biome.
 |---|---|---|---|---|---|
 | 0 | Canyon (hub) | slot, W 40, H 110, overhang lip | warp 10, ridges 7 @ 28 (vertical flutes) | pillars, boulders, arches | warm strata, orange haze |
 | 1 | Cave | elliptic tube, W 30, H 62 (`tubeness 1`) | stalactites 9, stalagmites 6 (`spikeLen 8`), ridges 5 @ 18 | columns (0.5 @ 40 u), boulders, dead-end side tunnels (0.4 per 200 u) | blue rock, cyan bands, dense blue fog, cool light |
+| 2 | Crystal spires | slot, W 36, H 120 | warp 8, smooth ridges 3 @ 34 | hexagonal crystals on the floor (0.55 @ 24 u) and walls (0.3), tilted from a literal (cos, sin) table, few pillars/arches | dark violet basalt, neon cyan/magenta/lime crystal faces, magenta sun |

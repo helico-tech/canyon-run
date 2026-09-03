@@ -17,6 +17,14 @@ export const FEATURE_BOULDER = 1;
 export const FEATURE_ARCH = 2;
 /** Carved capsule (air), unlike the rock features above. */
 export const FEATURE_TUNNEL = 3;
+/** Tilted hexagonal prism (rock), coloured as crystal by the mesher. */
+export const FEATURE_CRYSTAL = 4;
+
+/** 8 tilt angles from -35° to +35° as (cos, sin) literals. */
+const TILT = new Float64Array([
+  0.8192, -0.5736, 0.9063, -0.4226, 0.9659, -0.2588, 0.9962, -0.0872, 0.9962, 0.0872, 0.9659,
+  0.2588, 0.9063, 0.4226, 0.8192, 0.5736,
+]);
 
 /** 16 unit-ish directions in the x/z plane with a slight upward tilt (literals, no trig at runtime). */
 const TUNNEL_DIRS = new Float64Array([
@@ -36,10 +44,13 @@ export interface Feature {
   big: number;
   /** Axis-aligned reach for the early-out. */
   reach: number;
-  /** Tunnel direction. */
+  /** Tunnel direction, or crystal tilt (cos/sin about z in dx/dy, about x in dz/big2). */
   dx: number;
   dy: number;
   dz: number;
+  big2: number;
+  /** Crystal colour index (0..2). */
+  tint: number;
 }
 
 function feature(
@@ -51,7 +62,7 @@ function feature(
   big: number,
   reach: number,
 ): Feature {
-  return { kind, x, y, z, r, big, reach, dx: 0, dy: 0, dz: 0 };
+  return { kind, x, y, z, r, big, reach, dx: 0, dy: 0, dz: 0, big2: 0, tint: 0 };
 }
 
 function pillarReach(p: FieldParams): number {
@@ -62,6 +73,9 @@ function boulderReach(p: FieldParams): number {
 }
 function archReach(p: FieldParams): number {
   return p.halfWidth * (1 + p.widthVar) * 1.1 + p.archRMax + FEATURE_CLAMP;
+}
+function crystalReach(p: FieldParams): number {
+  return p.crystalHMax + p.crystalRMax + FEATURE_CLAMP;
 }
 
 /** Collects every feature whose reach can touch the box [x0,x1]×[z0,z1]. */
@@ -130,6 +144,46 @@ export function gatherFeatures(
       const fr = big + r + FEATURE_CLAMP;
       if (az + fr < z0 || az - fr > z1 || sp.cx + fr < x0 || sp.cx - fr > x1) continue;
       out.push(feature(FEATURE_ARCH, sp.cx, sp.floorY + 0.25 * p.height, az, r, big, fr));
+    }
+  }
+  if (p.crystalFloorProb > 0 || p.crystalWallProb > 0) {
+    const reach = crystalReach(p);
+    const s = p.crystalSpacing;
+    const gx0 = Math.floor((x0 - reach) / s);
+    const gx1 = Math.floor((x1 + reach) / s);
+    const gz0 = Math.floor((z0 - reach) / s);
+    const gz1 = Math.floor((z1 + reach) / s);
+    for (let gz = gz0; gz <= gz1; gz++) {
+      for (let gx = gx0; gx <= gx1; gx++) {
+        const roll = unit01(hash2(gx, gz, seed ^ 0x9111));
+        const cx = (gx + 0.15 + 0.7 * unit01(hash2(gx, gz, seed ^ 0x9222))) * s;
+        const cz = (gz + 0.15 + 0.7 * unit01(hash2(gx, gz, seed ^ 0x9333))) * s;
+        spine(seed, cz, p, sp);
+        // Cells inside the corridor grow floor crystals; cells near the walls grow wall crystals.
+        const rel = (cx - sp.cx) / sp.hw;
+        let y: number;
+        if (rel > -0.75 && rel < 0.75) {
+          if (roll > p.crystalFloorProb) continue;
+          y = sp.floorY - 12; // buried base: the warped floor can sit up to 14 u below floorY
+        } else if (rel > -1.15 && rel < 1.15) {
+          if (roll > p.crystalWallProb) continue;
+          y = sp.floorY + p.height * (0.15 + 0.6 * unit01(hash2(gx, gz, seed ^ 0x9444)));
+        } else continue;
+        const r =
+          p.crystalRMin + (p.crystalRMax - p.crystalRMin) * unit01(hash2(gx, gz, seed ^ 0x9555));
+        const h =
+          p.crystalHMin + (p.crystalHMax - p.crystalHMin) * unit01(hash2(gx, gz, seed ^ 0x9666));
+        const fr = h + r + FEATURE_CLAMP;
+        if (cx + fr < x0 || cx - fr > x1 || cz + fr < z0 || cz - fr > z1) continue;
+        const f = feature(FEATURE_CRYSTAL, cx, y, cz, r, h, fr);
+        const ti = hash2(gx, gz, seed ^ 0x9777);
+        f.dx = TILT[(ti & 7) * 2]!;
+        f.dy = TILT[(ti & 7) * 2 + 1]!;
+        f.dz = TILT[((ti >>> 3) & 7) * 2]!;
+        f.big2 = TILT[((ti >>> 3) & 7) * 2 + 1]!;
+        f.tint = (ti >>> 6) % 3;
+        out.push(f);
+      }
     }
   }
   if (p.tunnelProb > 0) {
@@ -203,6 +257,8 @@ export function featuresSD(seed: number, x: number, y: number, z: number, list: 
       if (d0 - 0.2 * f.r >= best) continue;
       const bulge = 1 + 0.2 * noise3(x * 0.15, y * 0.15, z * 0.15, seed ^ 0x6555);
       sd = d0 - f.r * (bulge - 1);
+    } else if (f.kind === FEATURE_CRYSTAL) {
+      sd = crystalSD(f, dx, y - f.y, dz);
     } else {
       const dy = y - f.y;
       const ring = Math.sqrt(dx * dx + dy * dy) - f.big;
@@ -211,4 +267,43 @@ export function featuresSD(seed: number, x: number, y: number, z: number, list: 
     if (sd < best) best = sd;
   }
   return best;
+}
+
+/** Hex prism of radius r and height big, tilted about z then x, base at the feature origin. */
+export function crystalSD(f: Feature, dx: number, dy: number, dz: number): number {
+  // Inverse rotation: about x by -(dz,big2), then about z by -(dx,dy).
+  const y1 = f.dz * dy + f.big2 * dz;
+  const z1 = -f.big2 * dy + f.dz * dz;
+  const x2 = f.dx * dx + f.dy * y1;
+  const y2 = -f.dy * dx + f.dx * y1;
+  const ax = Math.abs(x2);
+  const az = Math.abs(z1);
+  const hex = Math.max(ax * 0.866 + az * 0.5, az) - f.r;
+  const cap = Math.abs(y2 - f.big * 0.5) - f.big * 0.5;
+  return Math.max(hex, cap);
+}
+
+/** Index of the nearest crystal within `within` of the point, or -1. */
+export function crystalNear(
+  x: number,
+  y: number,
+  z: number,
+  list: Feature[],
+  within: number,
+): Feature | null {
+  let best = within;
+  let hit: Feature | null = null;
+  for (let i = 0; i < list.length; i++) {
+    const f = list[i]!;
+    if (f.kind !== FEATURE_CRYSTAL) continue;
+    const dx = x - f.x;
+    const dz = z - f.z;
+    if (dx > f.reach || dx < -f.reach || dz > f.reach || dz < -f.reach) continue;
+    const sd = crystalSD(f, dx, y - f.y, dz);
+    if (sd < best) {
+      best = sd;
+      hit = f;
+    }
+  }
+  return hit;
 }

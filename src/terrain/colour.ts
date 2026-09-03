@@ -53,6 +53,7 @@ export function faceColour(
   chunkKey: number,
   out: Uint8Array,
   o: number,
+  tint = -1,
 ): void {
   const material = materialOf(ny);
   let h = (y - sp.floorY) / p.height;
@@ -64,6 +65,12 @@ export function faceColour(
     rgbA[0] = lerp(rgbA[0]!, rgbB[0]!, t);
     rgbA[1] = lerp(rgbA[1]!, rgbB[1]!, t);
     rgbA[2] = lerp(rgbA[2]!, rgbB[2]!, t);
+  }
+  if (tint >= 0 && palA.crystals) {
+    const c = palA.crystals[tint % palA.crystals.length]!;
+    rgbA[0] = c[0];
+    rgbA[1] = c[1];
+    rgbA[2] = c[2];
   }
   const j = 0.9 + 0.2 * unit01(hash3(faceKey, chunkKey, seed, 0x77));
   const r = rgbA[0]! * j;

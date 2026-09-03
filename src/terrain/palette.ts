@@ -13,6 +13,8 @@ export interface BiomePalette {
   accent: Rgb;
   /** Strata bands per unit of normalised height. */
   bands: number;
+  /** Crystal face colours by tint index (biomes with crystals). */
+  crystals?: readonly Rgb[];
 }
 
 export const CANYON_PALETTE: BiomePalette = Object.freeze<BiomePalette>({

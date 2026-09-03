@@ -54,6 +54,14 @@ export interface FieldParams {
   archProb: number;
   archRMin: number;
   archRMax: number;
+  /** Crystals: tilted hex prisms on the floor and walls (2D cells); probability 0 disables. */
+  crystalSpacing: number;
+  crystalFloorProb: number;
+  crystalWallProb: number;
+  crystalRMin: number;
+  crystalRMax: number;
+  crystalHMin: number;
+  crystalHMax: number;
   /** Carved side tunnels (dead ends) on z cells; probability 0 disables. */
   tunnelSpacing: number;
   tunnelProb: number;
@@ -108,6 +116,13 @@ export const CANYON: FieldParams = Object.freeze({
   archProb: 0.3,
   archRMin: 5,
   archRMax: 9,
+  crystalSpacing: 24,
+  crystalFloorProb: 0,
+  crystalWallProb: 0,
+  crystalRMin: 2,
+  crystalRMax: 5,
+  crystalHMin: 8,
+  crystalHMax: 30,
   tunnelSpacing: 200,
   tunnelProb: 0,
   tunnelRMin: 8,
