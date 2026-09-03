@@ -78,3 +78,14 @@ test('simulateTicks plays a prefix of a replay and zero input past its end', () 
   const beyond = simulateTicks(replay, 330);
   expect(beyond.tick).toBe(330);
 });
+
+test('the biome mode is part of the state checksum and the replay header', () => {
+  const auto = recordRun(11, 120, createPilot(11));
+  const forced = recordRun(11, 120, createPilot(11, { mode: 255 }), undefined, 255);
+  expect(auto.replay.biomeMode).toBe(0);
+  expect(forced.replay.biomeMode).toBe(255);
+  expect(forced.replay.finalChecksum).not.toBe(auto.replay.finalChecksum);
+  expect(validateReplay(forced.replay).verdict).toBe('ok');
+  // A file claiming another mode diverges at the first checkpoint.
+  expect(validateReplay({ ...forced.replay, biomeMode: 0 }).verdict).toBe('checkpoint-mismatch');
+});

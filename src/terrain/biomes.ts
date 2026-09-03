@@ -61,9 +61,38 @@ export function segmentAt(z: number): { index: number; start: number; end: numbe
   return { index: 2 * k + 1, start: k * pair + SEGMENT_HUB, end: (k + 1) * pair };
 }
 
-export function biomeForSegment(seed: number, index: number): BiomeDef {
-  if (index % 2 === 0 || SPECIALS.length === 0) return CANYON_BIOME;
+/** Biome mode: 0 auto (hashed specials), MODE_CANYON canyon only, or a special's id for every odd segment. */
+export const MODE_AUTO = 0;
+export const MODE_CANYON = 255;
+
+export function biomeForSegment(seed: number, index: number, mode = MODE_AUTO): BiomeDef {
+  if (index % 2 === 0 || SPECIALS.length === 0 || mode === MODE_CANYON) return CANYON_BIOME;
+  if (mode !== MODE_AUTO) {
+    const forced = SPECIALS.find((b) => b.id === mode);
+    if (forced) return forced;
+  }
   return SPECIALS[hash1(index, seed ^ 0x42a5) % SPECIALS.length]!;
+}
+
+/** Names accepted by the UI, URL and CLI. */
+export function biomeModes(): Array<{ name: string; mode: number }> {
+  return [
+    { name: 'auto', mode: MODE_AUTO },
+    { name: 'canyon', mode: MODE_CANYON },
+    ...SPECIALS.map((b) => ({ name: b.name, mode: b.id })),
+  ];
+}
+
+export function parseBiomeMode(text: string | null | undefined): number | null {
+  if (text === null || text === undefined || text === '') return null;
+  const t = text.trim().toLowerCase();
+  for (const m of biomeModes()) if (m.name === t || m.name.split('-')[0] === t) return m.mode;
+  const n = Number(t);
+  return Number.isInteger(n) && biomeModes().some((m) => m.mode === n) ? n : null;
+}
+
+export function biomeModeName(mode: number): string {
+  return biomeModes().find((m) => m.mode === mode)?.name ?? 'auto';
 }
 
 export interface Blend {
@@ -148,12 +177,17 @@ export function mixParams(
  * Biomes in force at z. Blend zones are BLEND_LENGTH wide, centred on segment
  * boundaries; t rises with z from the earlier biome to the later one.
  */
-export function blendAt(seed: number, z: number, out: Blend = createBlend()): Blend {
+export function blendAt(
+  seed: number,
+  z: number,
+  out: Blend = createBlend(),
+  mode = MODE_AUTO,
+): Blend {
   const seg = segmentAt(z);
-  const here = biomeForSegment(seed, seg.index);
+  const here = biomeForSegment(seed, seg.index, mode);
   const half = BLEND_LENGTH * 0.5;
   if (z > seg.end - half && Number.isFinite(seg.end)) {
-    const next = biomeForSegment(seed, seg.index + 1);
+    const next = biomeForSegment(seed, seg.index + 1, mode);
     out.a = here;
     out.b = next;
     out.segA = seg.index;
@@ -161,7 +195,7 @@ export function blendAt(seed: number, z: number, out: Blend = createBlend()): Bl
     out.t = smoothstep(seg.end - half, seg.end + half, z);
   } else if (z < seg.start + half && Number.isFinite(seg.start) && seg.index > 0) {
     // Second half of the blend that started in the previous segment.
-    out.a = biomeForSegment(seed, seg.index - 1);
+    out.a = biomeForSegment(seed, seg.index - 1, mode);
     out.b = here;
     out.segA = seg.index - 1;
     out.segB = seg.index;
@@ -190,8 +224,9 @@ export function mixRgb(a: Rgb, b: Rgb, t: number): Rgb {
 export function atmosphereAt(
   seed: number,
   z: number,
+  mode = MODE_AUTO,
 ): { horizon: Rgb; zenith: Rgb; sun: Rgb; accent: Rgb; stars: number } & BiomeAtmosphere {
-  const bl = blendAt(seed, z);
+  const bl = blendAt(seed, z, createBlend(), mode);
   const pa = bl.a.palette;
   const pb = bl.b.palette;
   const aa = bl.a.atmosphere;

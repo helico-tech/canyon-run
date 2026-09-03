@@ -12,12 +12,14 @@ const GLOW_RANGE = 10;
 export class HudProbe {
   private readonly sampler: FieldSampler;
   private readonly b = new Float64Array(9);
-  constructor(seed: number) {
-    this.sampler = new FieldSampler(seed);
+  private readonly mode: number;
+  constructor(seed: number, mode = 0) {
+    this.sampler = new FieldSampler(seed, mode);
+    this.mode = mode;
   }
 
   view(state: SimState, replayLabel: string | null): HudView {
-    const sp = spineAt(state.seed, state.z);
+    const sp = spineAt(state.seed, state.z, undefined, this.mode);
     const ceiling = sp.ceilY - C.CEIL_MARGIN;
     const altitude = (state.y - sp.floorY) / (ceiling - sp.floorY);
     const r = PROBE_DIST + 2;

@@ -8,7 +8,8 @@ import { InputSampler } from './inputSampler.ts';
 import { advance } from './loop.ts';
 import { isLocked, requestLock } from './pointerLock.ts';
 import { createScreens } from './screens.ts';
-import { hashForSeed, parseSeed, randomSeed, seedFromHash } from './seed.ts';
+import { biomeFromHash, hashForSeed, parseSeed, randomSeed, seedFromHash } from './seed.ts';
+import { biomeModeName, biomeModes, parseBiomeMode } from '../terrain/biomes.ts';
 import { browserStorage } from './storage.ts';
 import { installTestApi, isTestMode } from './testMode.ts';
 import { isReplay } from '../sim/replay.ts';
@@ -25,6 +26,8 @@ const test = isTestMode();
 const debug = params.get('debug') === '1';
 const nogl = params.get('nogl') === '1';
 const workersParam = params.get('workers');
+const biomeMode =
+  parseBiomeMode(params.get('biome')) ?? parseBiomeMode(biomeFromHash(window.location.hash)) ?? 0;
 const workers = workersParam ? Number(workersParam) : undefined;
 const storage = browserStorage();
 const seed =
@@ -55,21 +58,23 @@ const game = new Game(canvas, {
   preserveDrawingBuffer: test,
   nogl,
   workers,
+  biomeMode: pendingReplay?.biomeMode ?? biomeMode,
 });
 const hud = createHud(root);
-let hudProbe = new HudProbe(seed);
+let hudProbe = new HudProbe(game.seed, game.biomeMode);
 let hudClock = 0;
 game.onRender = (state) => {
   hudClock += 1000 / 60;
   hud.update(state, hudProbe.view(state, game.replayLabel), test ? hudClock : performance.now());
 };
-const applySeed = (s: number): void => {
-  hud.setSeed(s);
-  hudProbe = new HudProbe(s);
+const applySeed = (s: number, mode: number): void => {
+  const name = biomeModeName(mode);
+  hud.setSeed(s, name);
+  hudProbe = new HudProbe(s, mode);
   storage.setLastSeed(s);
-  if (!test) history.replaceState(null, '', hashForSeed(s));
+  if (!test) history.replaceState(null, '', hashForSeed(s, name));
 };
-applySeed(game.seed);
+applySeed(game.seed, game.biomeMode);
 
 if (test) {
   installTestApi(game, canvas, SIM_VERSION);
@@ -83,17 +88,18 @@ if (test) {
   game.setSource(() => sampler.take());
   if (hint) hint.hidden = true;
 
-  const begin = (s: number): void => {
-    if (s !== game.seed) applySeed(s);
+  const begin = (s: number, mode: number = game.biomeMode): void => {
+    if (s !== game.seed || mode !== game.biomeMode) applySeed(s, mode);
     screens.hideStart();
     screens.hideRunOver();
     sampler.releaseAll();
     sampler.enabled = true;
-    if (game.phase === 'idle' && s === game.seed) game.start();
-    else game.restart(s);
+    if (game.phase === 'idle' && s === game.seed && mode === game.biomeMode) game.start();
+    else game.restart(s, mode);
     requestLock(canvas);
   };
-  screens.onStart((text) => begin(parseSeed(text) ?? game.seed));
+  screens.setBiomes(biomeModes().map((m) => m.name));
+  screens.onStart((text, biome) => begin(parseSeed(text) ?? game.seed, parseBiomeMode(biome) ?? 0));
   screens.onCopyReplay(async () => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(game.replay({ recordedBy: 'browser' })));
@@ -107,7 +113,7 @@ if (test) {
     sampler.enabled = false;
     game.start();
   } else {
-    screens.showStart(game.seed, storage.best()?.score ?? null);
+    screens.showStart(game.seed, storage.best()?.score ?? null, biomeModeName(game.biomeMode));
   }
 
   game.onDeath = (state) => {
@@ -160,7 +166,7 @@ if (test) {
     if (isLocked(canvas) && game.phase === 'running') sampler.mouseMove(e.movementX, e.movementY);
   });
 
-  await game.settle();
+  // The loop starts at once; chunks stream in while the start screen is up.
   let last = performance.now();
   let acc = 0;
   const frame = (now: number): void => {

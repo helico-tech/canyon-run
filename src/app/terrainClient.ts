@@ -26,14 +26,14 @@ export class TerrainClient {
   generated = 0;
   generateMs = 0;
 
-  constructor(seed: number, workers: number = workerCount()) {
+  constructor(seed: number, workers: number = workerCount(), mode = 0) {
     workers = Math.max(1, Math.min(4, Math.floor(workers || workerCount())));
     for (let i = 0; i < workers; i++) {
       const w = new Worker(new URL('./terrain.worker.ts', import.meta.url), { type: 'module' });
       w.onmessage = (e: MessageEvent<FromWorker>) => this.onMessage(e.data);
       this.workers.push(w);
     }
-    this.broadcast({ type: 'seed', seed: seed >>> 0 });
+    this.broadcast({ type: 'seed', seed: seed >>> 0, mode });
   }
 
   private broadcast(msg: ToWorker): void {
@@ -99,6 +99,8 @@ export class TerrainClient {
 
   dispose(): void {
     for (const w of this.workers) w.terminate();
+    // Nothing more will arrive: release anyone waiting for the ring.
+    for (const wake of this.idleWaiters.splice(0)) wake();
   }
 
   get workerTotal(): number {

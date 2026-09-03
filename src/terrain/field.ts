@@ -108,14 +108,16 @@ export class FieldContext {
   featsA: Feature[] = [];
   featsB: Feature[] = [];
   private seed: number;
+  readonly mode: number;
   private z = Number.NaN;
   private x0 = 0;
   private x1 = 0;
   private z0 = 0;
   private z1 = 0;
 
-  constructor(seed: number) {
+  constructor(seed: number, mode = 0) {
     this.seed = seed >>> 0;
+    this.mode = mode;
   }
 
   /** Sets the gather box; features are gathered lazily per biome pair. */
@@ -136,7 +138,7 @@ export class FieldContext {
   at(z: number): void {
     if (z === this.z) return;
     this.z = z;
-    blendAt(this.seed, z, this.blend);
+    blendAt(this.seed, z, this.blend, this.mode);
     const { segA, segB, t, pa, pb } = this.blend;
     spine(this.seed, z, pa, this.spA);
     // Feature sets depend on the segment's difficulty-scaled params: cache by segment index.
@@ -199,9 +201,9 @@ export class FieldSampler {
   private readonly ctx: FieldContext;
   private readonly seed: number;
 
-  constructor(seed: number) {
+  constructor(seed: number, mode = 0) {
     this.seed = seed >>> 0;
-    this.ctx = new FieldContext(this.seed);
+    this.ctx = new FieldContext(this.seed, mode);
   }
 
   /** Prepares features for points inside the box; call before `density`. */
@@ -223,14 +225,14 @@ export class FieldSampler {
 
 /** Mixed corridor spine at z for callers that only need the envelope (sim ceiling, pilot). */
 const spineBlend = createBlend();
-export function spineAt(seed: number, z: number, out: Spine = createSpine()): Spine {
-  const bl = blendAt(seed, z, spineBlend);
+export function spineAt(seed: number, z: number, out: Spine = createSpine(), mode = 0): Spine {
+  const bl = blendAt(seed, z, spineBlend, mode);
   return spine(seed, z, bl.params, out);
 }
 
 /** Standalone full evaluation at one point (gathers features around it). Convenience, not the hot path. */
-export function density(seed: number, x: number, y: number, z: number): number {
-  const s = new FieldSampler(seed);
+export function density(seed: number, x: number, y: number, z: number, mode = 0): number {
+  const s = new FieldSampler(seed, mode);
   s.prepare(x, x, z, z);
   return s.density(x, y, z);
 }

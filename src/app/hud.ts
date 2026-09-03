@@ -16,7 +16,7 @@ export interface HudView {
 export interface Hud {
   root: HTMLElement;
   update(state: SimState, view: HudView, nowMs: number): void;
-  setSeed(seed: number): void;
+  setSeed(seed: number, biome?: string): void;
 }
 
 const TEXT_INTERVAL_MS = 1000 / 15;
@@ -85,8 +85,9 @@ export function createHud(parent: HTMLElement): Hud {
   let wasAlive = true;
   return {
     root,
-    setSeed(seed) {
-      seedEl.textContent = `seed ${formatSeed(seed)}`;
+    setSeed(seed, biome = 'auto') {
+      seedEl.textContent =
+        biome === 'auto' ? `seed ${formatSeed(seed)}` : `seed ${formatSeed(seed)} · ${biome}`;
     },
     update(state, view, nowMs) {
       const tV = Math.min(

@@ -1,5 +1,12 @@
 import { expect, test } from 'vitest';
-import { formatSeed, hashForSeed, parseSeed, randomSeed, seedFromHash } from './seed.ts';
+import {
+  biomeFromHash,
+  formatSeed,
+  hashForSeed,
+  parseSeed,
+  randomSeed,
+  seedFromHash,
+} from './seed.ts';
 
 test('formats and parses XXXX-XXXX, plain hex and decimal', () => {
   expect(formatSeed(1)).toBe('0000-0001');
@@ -31,4 +38,12 @@ test('round-trips through the URL hash', () => {
 test('random seeds are non-zero u32', () => {
   expect(randomSeed(() => 0)).toBe(1);
   expect(randomSeed(() => 0.999999)).toBeLessThanOrEqual(0xffffffff);
+});
+
+test('the hash carries the biome mode name when it is not auto', () => {
+  expect(hashForSeed(7)).toBe('#seed=0000-0007');
+  expect(hashForSeed(7, 'trench-run')).toBe('#seed=0000-0007&biome=trench-run');
+  expect(biomeFromHash('#seed=0000-0007&biome=trench-run')).toBe('trench-run');
+  expect(biomeFromHash('#seed=0000-0007')).toBeNull();
+  expect(seedFromHash('#seed=0000-0007&biome=cave')).toBe(7);
 });

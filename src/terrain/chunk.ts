@@ -35,6 +35,7 @@ export interface ChunkScratch {
   grid: Float64Array;
   ctx: FieldContext | null;
   ctxSeed: number;
+  ctxMode: number;
   out: MarchOutput;
   rgba: Uint8Array;
   /** Statistics of the last fill: full evaluations and base-only samples. */
@@ -48,6 +49,7 @@ export function createChunkScratch(): ChunkScratch {
     grid: new Float64Array(GRID_LENGTH),
     ctx: null,
     ctxSeed: -1,
+    ctxMode: -1,
     out,
     rgba: new Uint8Array(out.capacity * 12),
     full: 0,
@@ -55,10 +57,11 @@ export function createChunkScratch(): ChunkScratch {
   };
 }
 
-function contextFor(seed: number, s: ChunkScratch): FieldContext {
-  if (!s.ctx || s.ctxSeed !== seed) {
-    s.ctx = new FieldContext(seed);
+function contextFor(seed: number, mode: number, s: ChunkScratch): FieldContext {
+  if (!s.ctx || s.ctxSeed !== seed || s.ctxMode !== mode) {
+    s.ctx = new FieldContext(seed, mode);
     s.ctxSeed = seed;
+    s.ctxMode = mode;
   }
   return s.ctx;
 }
@@ -66,11 +69,18 @@ function contextFor(seed: number, s: ChunkScratch): FieldContext {
 const CELL_DIAG = Math.sqrt(3) * CELL_SIZE;
 
 /** Fills the 33³ grid for chunk (cx, cy, cz). Deep rock and deep air skip the detail terms. */
-export function fillGrid(seed: number, cx: number, cy: number, cz: number, s: ChunkScratch): void {
+export function fillGrid(
+  seed: number,
+  cx: number,
+  cy: number,
+  cz: number,
+  s: ChunkScratch,
+  mode = 0,
+): void {
   const ox = cx * CHUNK_SIZE;
   const oy = cy * CHUNK_SIZE;
   const oz = cz * CHUNK_SIZE;
-  const ctx = contextFor(seed, s);
+  const ctx = contextFor(seed, mode, s);
   ctx.setBox(ox, ox + CHUNK_SIZE, oz, oz + CHUNK_SIZE);
   const grid = s.grid;
   let full = 0;
@@ -107,6 +117,7 @@ export function fillGrid(seed: number, cx: number, cy: number, cz: number, s: Ch
 export function slabEnvelope(
   seed: number,
   cz: number,
+  mode = 0,
 ): { minX: number; maxX: number; minY: number; maxY: number } {
   const oz = cz * CHUNK_SIZE;
   const sp = createSpine();
@@ -117,7 +128,7 @@ export function slabEnvelope(
   let pad = 0;
   for (let z = 0; z <= SAMPLES - 1; z += 4) {
     const wz = oz + z * CELL_SIZE;
-    const bl = blendAt(seed, wz);
+    const bl = blendAt(seed, wz, undefined, mode);
     for (const p of bl.t === 0 ? [bl.pa] : [bl.pa, bl.pb]) {
       spine(seed, wz, p, sp);
       const reach = sp.hw * (1 + p.profileLip);
@@ -132,8 +143,8 @@ export function slabEnvelope(
 }
 
 /** Chunk coordinates (cx, cy) in slab cz that can contain surface, nearest to the spine first. */
-export function slabCandidates(seed: number, cz: number): Array<[number, number]> {
-  const e = slabEnvelope(seed, cz);
+export function slabCandidates(seed: number, cz: number, mode = 0): Array<[number, number]> {
+  const e = slabEnvelope(seed, cz, mode);
   const cx0 = Math.floor(e.minX / CHUNK_SIZE);
   const cx1 = Math.floor(e.maxX / CHUNK_SIZE);
   const cy0 = Math.floor(e.minY / CHUNK_SIZE);
@@ -161,8 +172,9 @@ export function buildChunk(
   cy: number,
   cz: number,
   s: ChunkScratch,
+  mode = 0,
 ): ChunkMesh | null {
-  fillGrid(seed, cx, cy, cz, s);
+  fillGrid(seed, cx, cy, cz, s, mode);
   const tris = march(s.grid, s.out);
   if (tris === 0) return null;
   const ox = cx * CHUNK_SIZE;
@@ -172,7 +184,7 @@ export function buildChunk(
   const pos = s.out.pos;
   const rgba = s.rgba;
   const sp: Spine = createSpine();
-  const ctx = contextFor(seed, s);
+  const ctx = contextFor(seed, mode, s);
   for (let t = 0; t < tris; t++) {
     const o = t * 9;
     const ax = pos[o]!;

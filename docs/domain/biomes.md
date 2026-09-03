@@ -44,3 +44,13 @@ height, coreYFrac, detail amplitudes and feature settings are per biome.
 | 4 | Hoodoo desert | wide low hall, W 90, H 100, walls recede (`profileLip 0.6`) | warp 12 @ 70, banded ridges 4 @ 35, roof hidden by warm fog | stepped hoodoos (pillars with `pillarStepLen 6`, 0.5 @ 40 u), rounded mesas (0.15 @ 96 u, 20–40 u), boulders | creamy oranges, pale sky, noon sun |
 | 5 | Floating archipelago | tall hall, W 80, H 170, floor 40 u below the spine altitude (`floorOffset`) | warp 14 @ 60, ridges 4, floor fBm 8 | floating ridged ellipsoids on 3D cells (0.5 @ 48 u, 6–18 u), arches, few boulders | pastel violet and pink, teal floor haze, bright fog |
 | 6 | Trench run | dead-straight slot, W 28, H 72, **open roof** (`roofOpen`, the sim's ceiling clamp still bounds altitude) | no noise at all (`warp 0`, `ridges 0`, `detail 0`) | rounded boxes: floor greebles (0.45 @ 22 u), wall greebles (0.55 @ 18 u), square towers hugging the walls (0.35 @ 64 u), cross beams between the core and the ceiling clamp (0.6 @ 150 u) | grey panels with lit strips, black starfield sky, white sun, red accent |
+
+## Biome selector
+
+`biomeMode` (0 auto, 255 canyon only, or a special's id) forces every odd
+segment to one special. It is part of `SimState` (hashed), the replay header
+(`biomeMode`, absent means 0), the URL hash (`#seed=…&biome=trench-run`), the
+start screen's select, the HUD seed label, `node src/cli/replay.ts run --biome`
+and `pnpm headless -- --biome`. Names: auto, canyon, cave, crystal-spires,
+lava-rift, hoodoo-desert, floating-archipelago, trench-run (a prefix before the
+dash also works).

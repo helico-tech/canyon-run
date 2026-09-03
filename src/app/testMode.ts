@@ -73,7 +73,7 @@ export function installTestApi(game: Game, canvas: HTMLCanvasElement, simVersion
     dataURL: () => canvas.toDataURL('image/png'),
     chunkStats: () => game.world.stats(),
     atmosphere: () => {
-      const a = atmosphereAtZ(game.state.seed, game.state.z);
+      const a = atmosphereAtZ(game.state.seed, game.state.z, game.state.biomeMode);
       return { horizon: [a.horizon[0], a.horizon[1], a.horizon[2]], fogDensity: a.fogDensity };
     },
     render: () => game.render(),

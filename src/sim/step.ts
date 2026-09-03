@@ -27,29 +27,33 @@ export function scoreFactor(s: SimState): number {
 /** Reusable scratch for one seed; results never depend on it. */
 export class StepScratch {
   readonly seed: number;
+  readonly mode: number;
   /** Ghost mode skips hull collision (tests and camera fly-throughs); proximity still works. */
   ghost: boolean;
   readonly collision: CollisionScratch;
   readonly basis = new Float64Array(9);
   readonly quat = new Float64Array(4);
   readonly spine = createSpine();
-  constructor(seed: number, opts: { ghost?: boolean } = {}) {
+  constructor(seed: number, opts: { ghost?: boolean; mode?: number } = {}) {
     this.seed = seed >>> 0;
+    this.mode = opts.mode ?? 0;
     this.ghost = opts.ghost ?? false;
-    this.collision = new CollisionScratch(this.seed);
+    this.collision = new CollisionScratch(this.seed, this.mode);
   }
 }
 
 let shared: StepScratch | null = null;
-export function scratchFor(seed: number): StepScratch {
-  if (!shared || shared.seed !== seed >>> 0) shared = new StepScratch(seed);
+export function scratchFor(seed: number, mode = 0): StepScratch {
+  if (!shared || shared.seed !== seed >>> 0 || shared.mode !== mode) {
+    shared = new StepScratch(seed, { mode });
+  }
   return shared;
 }
 
 export function step(
   s: SimState,
   input: InputFrame,
-  scratch: StepScratch = scratchFor(s.seed),
+  scratch: StepScratch = scratchFor(s.seed, s.biomeMode),
 ): void {
   if (!s.alive) {
     s.tick++;
@@ -73,7 +77,7 @@ export function step(
   if (cmdRoll === 0) cmdRoll = clamp(rightY * C.AUTO_LEVEL, -1, 1);
   cmdYaw = clamp(cmdYaw - rightY * C.BANK_YAW_GAIN, -1, 1);
 
-  const sp = spineAt(s.seed, s.z, scratch.spine);
+  const sp = spineAt(s.seed, s.z, scratch.spine, s.biomeMode);
   const ceiling = sp.ceilY - C.CEIL_MARGIN;
   const softTop = ceiling - C.CEIL_SOFT;
   if (s.y > softTop)
@@ -121,7 +125,7 @@ export function step(
   s.y += b[7]! * s.speed * C.DT;
   s.z += b[8]! * s.speed * C.DT;
   // Clamp against the roof at the new z so the invariant holds at every tick end.
-  const ceilingNow = spineAt(s.seed, s.z, scratch.spine).ceilY - C.CEIL_MARGIN;
+  const ceilingNow = spineAt(s.seed, s.z, scratch.spine, s.biomeMode).ceilY - C.CEIL_MARGIN;
   if (s.y > ceilingNow) s.y = ceilingNow;
 
   // Collision at the midpoint and the end of the tick's travel.

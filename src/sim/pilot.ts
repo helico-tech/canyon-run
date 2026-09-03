@@ -31,6 +31,8 @@ export interface PilotOptions {
   kLat?: number;
   kTurn?: number;
   kBank?: number;
+  /** Biome mode of the world being flown (must match the state). */
+  mode?: number;
 }
 
 export function createPilot(seed: number, opts: PilotOptions = {}): (s: SimState) => InputFrame {
@@ -40,6 +42,7 @@ export function createPilot(seed: number, opts: PilotOptions = {}): (s: SimState
   const kLat = opts.kLat ?? 0.02;
   const kTurn = opts.kTurn ?? 5;
   const kBank = opts.kBank ?? 1.5;
+  const biomeMode = opts.mode ?? 0;
   const rng = sfc32Seed((seed ^ 0xa5a5a5a5) >>> 0);
   const sp = createSpine();
   const b = new Float64Array(9);
@@ -57,13 +60,13 @@ export function createPilot(seed: number, opts: PilotOptions = {}): (s: SimState
     const fY = b[7]!;
     const fZ = b[8]!;
 
-    spineAt(s.seed, s.z - 20, sp);
+    spineAt(s.seed, s.z - 20, sp, biomeMode);
     const cxBack = sp.cx;
     const cyBack = sp.coreY;
-    spineAt(s.seed, s.z + lookahead, sp);
+    spineAt(s.seed, s.z + lookahead, sp, biomeMode);
     const slopeX = (sp.cx - cxBack) / (lookahead + 20);
     const slopeY = (sp.coreY - cyBack) / (lookahead + 20);
-    spineAt(s.seed, s.z, sp);
+    spineAt(s.seed, s.z, sp, biomeMode);
     const ex = sp.cx - s.x;
     const ey = sp.coreY - s.y;
     let dX = slopeX + clamp(ex * kLat, -0.5, 0.5);

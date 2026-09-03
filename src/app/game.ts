@@ -28,6 +28,8 @@ export interface GameOptions {
   nogl?: boolean;
   /** Terrain worker count override (benchmarks). */
   workers?: number;
+  /** Biome mode (0 auto, 255 canyon only, or a special's id). */
+  biomeMode?: number;
 }
 
 export type InputSource = (s: SimState) => InputFrame;
@@ -43,6 +45,8 @@ export class Game {
   private source: InputSource;
   /** The source restart() returns to (player sampler or pilot); replays are temporary. */
   private defaultSource: InputSource;
+  /** Set by setSource (the app's sampler); null when the scripted pilot flies. */
+  private playerSource: InputSource | null = null;
   private forcedInput: InputFrame | null = null;
   /** Called after every render with the interpolated state (HUD hook). */
   onRender: ((state: SimState, alpha: number) => void) | null = null;
@@ -67,13 +71,14 @@ export class Game {
         });
     this.renderer.setSeed(opts.seed);
     this.renderer.setAtmosphere(atmosphereFor(CANYON_PALETTE));
-    this.state = createState(opts.seed);
+    const mode = opts.biomeMode ?? 0;
+    this.state = createState(opts.seed, mode);
     this.prev = cloneState(this.state);
-    this.scratch = new StepScratch(opts.seed);
-    this.source = createPilot(opts.seed);
+    this.scratch = new StepScratch(opts.seed, { mode });
+    this.source = createPilot(opts.seed, { mode });
     this.defaultSource = this.source;
-    this.recorder = new Recorder(opts.seed);
-    this.world = new World(opts.seed, this.renderer, opts.workers);
+    this.recorder = new Recorder(opts.seed, mode);
+    this.world = new World(opts.seed, this.renderer, opts.workers, mode);
     this.world.update(this.state.z);
   }
 
@@ -86,10 +91,15 @@ export class Game {
     return this.state.seed;
   }
 
+  get biomeMode(): number {
+    return this.state.biomeMode;
+  }
+
   /** Replaces the input source (player sampler or pilot); restart() returns to it. */
   setSource(source: InputSource): void {
     this.source = source;
     this.defaultSource = source;
+    this.playerSource = source;
     this.forcedInput = null;
   }
 
@@ -103,6 +113,11 @@ export class Game {
     if (!isReplay(replay)) throw new Error('not a replay');
     if (replay.seed !== this.state.seed)
       throw new Error(`replay seed ${replay.seed} != game seed ${this.state.seed}`);
+    if ((replay.biomeMode ?? 0) !== this.state.biomeMode) {
+      throw new Error(
+        `replay biome mode ${replay.biomeMode ?? 0} != game mode ${this.state.biomeMode}`,
+      );
+    }
     const frames = decodeRuns(replay.runs);
     this.replayLabel = `replay ${replay.ticks} ticks`;
     this.forcedInput = null;
@@ -125,7 +140,7 @@ export class Game {
       this.deathVel[0] = this.deathBasis[6]! * this.state.speed;
       this.deathVel[1] = this.deathBasis[7]! * this.state.speed;
       this.deathVel[2] = this.deathBasis[8]! * this.state.speed;
-      const a = atmosphereAtZ(this.state.seed, this.state.z);
+      const a = atmosphereAtZ(this.state.seed, this.state.z, this.state.biomeMode);
       const accent = a.accent ?? [1, 1, 1];
       this.renderer.spawnShards(
         this.state.seed ^ this.state.tick,
@@ -146,19 +161,20 @@ export class Game {
   }
 
   /** New run on `seed` (same seed keeps the chunk cache). Under 300 ms either way. */
-  restart(seed: number = this.state.seed): void {
+  restart(seed: number = this.state.seed, biomeMode: number = this.state.biomeMode): void {
     const s = seed >>> 0;
-    this.state = createState(s);
+    this.state = createState(s, biomeMode);
     this.prev = cloneState(this.state);
-    this.scratch = new StepScratch(s);
-    this.recorder = new Recorder(s);
+    this.scratch = new StepScratch(s, { mode: biomeMode, ghost: this.scratch.ghost });
+    this.recorder = new Recorder(s, biomeMode);
+    this.defaultSource = this.playerSource ?? createPilot(s, { mode: biomeMode });
     this.topSpeed = 0;
     this.deathTick = -1;
     this.renderer.clearShards();
     this.replayLabel = null;
     this.source = this.defaultSource;
     this.forcedInput = null;
-    this.world.reset(s);
+    this.world.reset(s, biomeMode);
     this.world.update(this.state.z);
     this.renderer.setSeed(s);
     this.phase = 'running';
@@ -260,7 +276,7 @@ export class Game {
   }
 
   render(alpha = 1): void {
-    this.renderer.setAtmosphere(atmosphereAtZ(this.state.seed, this.state.z));
+    this.renderer.setAtmosphere(atmosphereAtZ(this.state.seed, this.state.z, this.state.biomeMode));
     this.renderer.render(this.pose(alpha));
     this.onRender?.(this.state, alpha);
   }
@@ -280,6 +296,7 @@ export class Game {
       rollRate: s.rollRate,
       score: s.score,
       proximity: s.proximity,
+      biomeMode: s.biomeMode,
       streakTicks: s.streakTicks,
       eventId: s.eventId,
       eventPoints: s.eventPoints,

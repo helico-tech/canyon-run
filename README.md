@@ -31,7 +31,11 @@ Headless tools need Playwright's Chromium once: `pnpm exec playwright install ch
 
 ## Play
 
-Click to fly (pointer lock). `#seed=XXXX-XXXX` in the URL shares a canyon.
+Click to fly (pointer lock). `#seed=XXXX-XXXX` in the URL shares a canyon; the
+start screen's biome select (or `&biome=trench-run`, `cave`, `crystal-spires`,
+`lava-rift`, `hoodoo-desert`, `floating-archipelago`, `canyon`) forces a biome
+for every special segment. Biomes: canyon, cave, crystal spires, lava rift,
+hoodoo desert, floating archipelago, and a Death-Star-style trench run.
 
 | Input | Action |
 |---|---|

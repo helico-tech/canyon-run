@@ -39,8 +39,8 @@ export function rgbToFloat(c: Rgb): [number, number, number] {
 }
 
 /** Atmosphere blended between the biomes in force at z. */
-export function atmosphereAtZ(seed: number, z: number): Atmosphere {
-  const a = atmosphereAt(seed, z);
+export function atmosphereAtZ(seed: number, z: number, mode = 0): Atmosphere {
+  const a = atmosphereAt(seed, z, mode);
   return {
     horizon: a.horizon,
     zenith: a.zenith,

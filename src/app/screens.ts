@@ -12,11 +12,13 @@ export interface RunOverData {
 }
 
 export interface Screens {
-  showStart(seed: number, best: number | null): void;
+  showStart(seed: number, best: number | null, biome?: string): void;
+  setBiomes(names: string[]): void;
+  readonly biomeValue: string;
   hideStart(): void;
   showRunOver(data: RunOverData): void;
   hideRunOver(): void;
-  onStart(handler: (seedText: string) => void): void;
+  onStart(handler: (seedText: string, biome: string) => void): void;
   onCopyReplay(handler: () => Promise<boolean>): void;
   readonly startVisible: boolean;
   readonly runOverVisible: boolean;
@@ -36,6 +38,7 @@ export function createScreens(parent: HTMLElement): Screens {
       <h1>Canyon Run</h1>
       <p class="sub">fly fast, stay low, do not touch the rock</p>
       <label>seed <input class="seed" spellcheck="false" maxlength="9" /></label>
+      <label>biome <select class="biome"></select></label>
       <p class="best"></p>
       <ul class="keys">
         <li><b>mouse</b> pitch / roll <b>W S</b> push / pull <b>A D</b> roll <b>Q E</b> yaw</li>
@@ -60,15 +63,18 @@ export function createScreens(parent: HTMLElement): Screens {
   over.hidden = true;
   parent.append(start, over);
   const seedInput = start.querySelector<HTMLInputElement>('.seed')!;
+  const biomeSelect = start.querySelector<HTMLSelectElement>('.biome')!;
+  biomeSelect.addEventListener('click', (e) => e.stopPropagation());
+  biomeSelect.addEventListener('keydown', (e) => e.stopPropagation());
   const startBest = start.querySelector<HTMLElement>('.best')!;
-  let startHandler: ((seedText: string) => void) | null = null;
+  let startHandler: ((seedText: string, biome: string) => void) | null = null;
   start.addEventListener('click', (e) => {
-    if ((e.target as HTMLElement).closest('input')) return;
-    startHandler?.(seedInput.value);
+    if ((e.target as HTMLElement).closest('input, select, label')) return;
+    startHandler?.(seedInput.value, biomeSelect.value);
   });
   seedInput.addEventListener('keydown', (e) => {
     e.stopPropagation();
-    if (e.key === 'Enter') startHandler?.(seedInput.value);
+    if (e.key === 'Enter') startHandler?.(seedInput.value, biomeSelect.value);
   });
   const q = (root: HTMLElement, sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!;
   const copyBtn = over.querySelector<HTMLButtonElement>('.copy')!;
@@ -92,8 +98,15 @@ export function createScreens(parent: HTMLElement): Screens {
     onStart(handler) {
       startHandler = handler;
     },
-    showStart(seed, best) {
+    get biomeValue() {
+      return biomeSelect.value;
+    },
+    setBiomes(names) {
+      biomeSelect.innerHTML = names.map((n) => `<option value="${n}">${n}</option>`).join('');
+    },
+    showStart(seed, best, biome = 'auto') {
       seedInput.value = formatSeed(seed);
+      biomeSelect.value = biome;
       startBest.textContent =
         best === null ? 'no runs yet' : `best ${Math.floor(best / 1000).toLocaleString('en-US')}`;
       start.hidden = false;

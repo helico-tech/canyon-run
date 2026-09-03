@@ -2,7 +2,7 @@
 // The client plans which slabs it wants; the worker builds them in request order.
 
 export type ToWorker =
-  | { type: 'seed'; seed: number }
+  | { type: 'seed'; seed: number; mode: number }
   | { type: 'build'; cz: number }
   | { type: 'cancelBelow'; cz: number };
 

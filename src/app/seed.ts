@@ -28,8 +28,15 @@ export function seedFromHash(hash: string): number | null {
   return m ? parseSeed(decodeURIComponent(m[1]!)) : null;
 }
 
-export function hashForSeed(seed: number): string {
-  return `#seed=${formatSeed(seed)}`;
+export function hashForSeed(seed: number, biome = 'auto'): string {
+  return biome === 'auto'
+    ? `#seed=${formatSeed(seed)}`
+    : `#seed=${formatSeed(seed)}&biome=${biome}`;
+}
+
+export function biomeFromHash(hash: string): string | null {
+  const m = /biome=([^&]+)/.exec(hash);
+  return m ? decodeURIComponent(m[1]!) : null;
 }
 
 export function randomSeed(random: () => number = Math.random): number {

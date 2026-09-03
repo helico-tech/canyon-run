@@ -144,3 +144,18 @@
   border-color: #2ee6d6;
   color: #2ee6d6;
 }
+.screen select.biome {
+  margin-left: 8px;
+  padding: 6px 8px;
+  background: #1c1030;
+  color: #2ee6d6;
+  border: 1px solid #2ee6d6;
+  font: inherit;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  pointer-events: auto;
+}
+.screen label {
+  pointer-events: auto;
+}

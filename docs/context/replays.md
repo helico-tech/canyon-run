@@ -17,6 +17,7 @@ pnpm sim:regold                               # regenerate tests/replays/*.json 
   "runs": [[count, keys, dx, dy], …], "checkpoints": [[60, "…"], …], "meta": {} }
 ```
 
+- `biomeMode` (optional, 0 when absent) selects the biome sequence; it is hashed into every checkpoint.
 - `runs` is run-length encoded over identical `(keys, dx, dy)`; reserved key bits (8–15) must be zero.
 - `checkpoints` hold the FNV-1a state checksum every 60 ticks and at the end.
 - Validation re-simulates from the seed and reports `ok`, `checkpoint-mismatch`

@@ -37,12 +37,14 @@ export interface SimState {
   eventTick: number;
   eventPoints: number;
   seed: number;
+  /** Biome mode (0 auto): part of the world identity, hashed. */
+  biomeMode: number;
   /** sfc32 state, advanced only by step(). */
   rng: Uint32Array;
 }
 
-export function createState(seed: number): SimState {
-  const sp = spineAt(seed >>> 0, 0);
+export function createState(seed: number, biomeMode = 0): SimState {
+  const sp = spineAt(seed >>> 0, 0, undefined, biomeMode);
   return {
     tick: 0,
     alive: 1,
@@ -70,6 +72,7 @@ export function createState(seed: number): SimState {
     eventTick: 0,
     eventPoints: 0,
     seed: seed >>> 0,
+    biomeMode,
     rng: sfc32Seed(seed >>> 0),
   };
 }
@@ -105,6 +108,7 @@ export function copyState(dst: SimState, src: SimState): void {
   dst.eventTick = src.eventTick;
   dst.eventPoints = src.eventPoints;
   dst.seed = src.seed;
+  dst.biomeMode = src.biomeMode;
   dst.rng.set(src.rng);
 }
 
@@ -126,7 +130,24 @@ export function checksum(s: SimState): number {
       s.yawRate,
       s.score,
       s.proximity,
+      s.closeMin,
+      s.eventPoints,
     ],
-    [s.tick, s.alive, s.rng[0]!, s.rng[1]!, s.rng[2]!, s.rng[3]!],
+    [
+      s.tick,
+      s.alive,
+      s.rng[0]!,
+      s.rng[1]!,
+      s.rng[2]!,
+      s.rng[3]!,
+      s.closeTicks,
+      s.threadTicks,
+      s.streakTicks,
+      s.graceTicks,
+      s.cooldown,
+      s.eventId,
+      s.eventTick,
+      s.biomeMode,
+    ],
   );
 }

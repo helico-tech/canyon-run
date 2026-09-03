@@ -5,6 +5,7 @@ import type { FromWorker, ToWorker } from '../terrain/worker-protocol.ts';
 
 const scratch = createChunkScratch();
 let seed = 0;
+let mode = 0;
 const queue: number[] = [];
 let running = false;
 
@@ -14,10 +15,10 @@ const post = (msg: FromWorker, transfer: Transferable[] = []): void => {
 
 function buildSlab(cz: number): void {
   const t0 = performance.now();
-  const candidates = slabCandidates(seed, cz);
+  const candidates = slabCandidates(seed, cz, mode);
   let chunks = 0;
   for (const [cx, cy] of candidates) {
-    const mesh = buildChunk(seed, cx, cy, cz, scratch);
+    const mesh = buildChunk(seed, cx, cy, cz, scratch, mode);
     if (!mesh) continue;
     chunks++;
     post({ type: 'chunk', cx, cy, cz, tris: mesh.tris, pos: mesh.pos, rgba: mesh.rgba }, [
@@ -47,6 +48,7 @@ self.onmessage = (e: MessageEvent<ToWorker>): void => {
   const msg = e.data;
   if (msg.type === 'seed') {
     seed = msg.seed >>> 0;
+    mode = msg.mode;
     queue.length = 0;
   } else if (msg.type === 'build') {
     if (!queue.includes(msg.cz)) queue.push(msg.cz);

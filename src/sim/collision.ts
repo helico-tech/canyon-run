@@ -13,8 +13,8 @@ export const HULL_REACH = 8;
 export class CollisionScratch {
   readonly sampler: FieldSampler;
   readonly probe = new Float64Array(3);
-  constructor(seed: number) {
-    this.sampler = new FieldSampler(seed);
+  constructor(seed: number, mode = 0) {
+    this.sampler = new FieldSampler(seed, mode);
   }
 }
 

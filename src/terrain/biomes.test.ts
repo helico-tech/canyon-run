@@ -13,6 +13,13 @@ import {
   SPECIALS,
 } from './biomes.ts';
 import type { BiomeDef } from './biomes.ts';
+import {
+  biomeForSegment,
+  biomeModeName,
+  createBlend as createBlendForTest,
+  MODE_CANYON,
+  parseBiomeMode,
+} from './biomes.ts';
 import { density, spineAt } from './field.ts';
 import { CANYON } from './params.ts';
 import { FEATURE_FACTOR, WIDTH_FACTOR } from './difficulty.ts';
@@ -145,4 +152,20 @@ test('the clear zone around a boundary has no features except the gate', () => {
   expect(gates[0]!.z).toBe(SEGMENT_HUB);
   for (const f of feats)
     if (f.kind !== FEATURE_GATE) expect(Math.abs(f.z - SEGMENT_HUB)).toBeGreaterThanOrEqual(75);
+});
+
+test('biome modes force a special or canyon only, and names round-trip', () => {
+  for (const special of REGISTERED) {
+    for (let i = 1; i < 12; i += 2) expect(biomeForSegment(1, i, special.id)).toBe(special);
+    expect(biomeForSegment(1, 2, special.id)).toBe(CANYON_BIOME);
+    expect(parseBiomeMode(special.name)).toBe(special.id);
+    expect(biomeModeName(special.id)).toBe(special.name);
+  }
+  for (let i = 0; i < 12; i++) expect(biomeForSegment(1, i, MODE_CANYON)).toBe(CANYON_BIOME);
+  expect(parseBiomeMode('canyon')).toBe(MODE_CANYON);
+  expect(parseBiomeMode('auto')).toBe(0);
+  expect(parseBiomeMode('trench')).toBe(parseBiomeMode('trench-run'));
+  expect(parseBiomeMode('nope')).toBeNull();
+  const blend = blendAt(1, SEGMENT_HUB, createBlendForTest(), REGISTERED[0]!.id);
+  expect(blend.b).toBe(REGISTERED[0]);
 });

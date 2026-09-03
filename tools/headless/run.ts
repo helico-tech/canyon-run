@@ -10,6 +10,7 @@ import type { Replay } from '../../src/sim/replay.ts';
 import { checksum } from '../../src/sim/state.ts';
 import { hex32 } from '../../src/sim/hash.ts';
 import { parseArgs } from './args.ts';
+import { parseBiomeMode } from '../../src/terrain/biomes.ts';
 import { openPage } from './browser.ts';
 import { runGates } from './gate.ts';
 import type { FrameRecord, GateResult } from './gate.ts';
@@ -27,6 +28,8 @@ export interface RunOptions {
   height: number;
   out: string;
   dist?: string;
+  /** Biome mode (0 auto); ignored when a replay is given. */
+  biomeMode?: number;
   /** Ticks to simulate before the first rendered frame (fast: no per-tick render). */
   skip?: number;
 }
@@ -56,6 +59,7 @@ export async function runHeadless(o: RunOptions): Promise<RunResult> {
   if (!fs.existsSync(path.join(dist, 'index.html')))
     throw new Error('dist/ missing: run pnpm build first');
   const seed = o.replay ? o.replay.seed : (o.seed ?? 1);
+  const mode = o.replay ? (o.replay.biomeMode ?? 0) : (o.biomeMode ?? 0);
   fs.mkdirSync(o.out, { recursive: true });
   const t0 = performance.now();
   const server = await serveStatic(dist);
@@ -63,10 +67,13 @@ export async function runHeadless(o: RunOptions): Promise<RunResult> {
     browser,
     page,
     console: log,
-  } = await openPage(`${server.url}/?test=1&seed=${seed}&w=${o.width}&h=${o.height}`, {
-    width: o.width,
-    height: o.height,
-  });
+  } = await openPage(
+    `${server.url}/?test=1&seed=${seed}&biome=${mode}&w=${o.width}&h=${o.height}`,
+    {
+      width: o.width,
+      height: o.height,
+    },
+  );
   const info = await page.evaluate(() => window.__info!);
   if (o.replay)
     await page.evaluate(
@@ -138,7 +145,13 @@ export async function runHeadless(o: RunOptions): Promise<RunResult> {
     // The browser plays the replay's inputs then zero input, for skip + frames ticks; do the same here.
     nodeChecksum = hex32(checksum(simulateTicks(o.replay, (o.skip ?? 0) + o.frames)));
   } else {
-    const { state } = recordRun(seed, (o.skip ?? 0) + o.frames, createPilot(seed));
+    const { state } = recordRun(
+      seed,
+      (o.skip ?? 0) + o.frames,
+      createPilot(seed, { mode }),
+      undefined,
+      mode,
+    );
     nodeChecksum = hex32(checksum(state));
   }
   const hudAnchor = readPng(pngs[pngs.length - 1]!.file);
@@ -186,6 +199,7 @@ if (import.meta.main) {
     height: Number(f.height ?? 360),
     out: f.out ?? 'runs/latest',
     skip: Number(f.skip ?? 0),
+    biomeMode: parseBiomeMode(f.biome) ?? 0,
   });
   for (const g of result.gates)
     if (!g.ok || f.verbose) console.log(`${g.ok ? 'ok  ' : 'FAIL'} ${g.name}: ${g.detail}`);

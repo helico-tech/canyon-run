@@ -23,6 +23,8 @@ export interface Replay {
   constantsHash: string;
   tickRate: number;
   seed: number;
+  /** Biome mode (0 auto); absent in files recorded before it existed. */
+  biomeMode?: number;
   ticks: number;
   finalScore: number;
   finalChecksum: string;
@@ -54,13 +56,15 @@ export function runsLength(runs: Run[]): number {
 /** Records inputs and checkpoints while a run is being simulated. */
 export class Recorder {
   readonly seed: number;
+  readonly biomeMode: number;
   private readonly runs: Run[] = [];
   private last: Run | null = null;
   private readonly checkpoints: Checkpoint[] = [];
   private ticks = 0;
 
-  constructor(seed: number) {
+  constructor(seed: number, biomeMode = 0) {
     this.seed = seed >>> 0;
+    this.biomeMode = biomeMode;
   }
 
   /** Call after `step(state, input)`. */
@@ -88,6 +92,7 @@ export class Recorder {
       constantsHash: hex32(hashConstants()),
       tickRate: C.TICK_RATE,
       seed: this.seed,
+      biomeMode: this.biomeMode,
       ticks: this.ticks,
       finalScore: stateAfter.score,
       finalChecksum: hex32(checksum(stateAfter)),
@@ -143,8 +148,9 @@ export function simulateReplay(
     return { verdict: 'malformed', detail: 'fewer inputs than ticks' };
   const cps = new Map<number, string>();
   for (const [t, h] of r.checkpoints) cps.set(t, h);
-  const state = createState(r.seed);
-  const scratch = opts.scratch ?? new StepScratch(r.seed);
+  const mode = r.biomeMode ?? 0;
+  const state = createState(r.seed, mode);
+  const scratch = opts.scratch ?? new StepScratch(r.seed, { mode });
   let tick = 0;
   for (const input of decodeRuns(r.runs)) {
     if (tick >= r.ticks) break;
@@ -173,6 +179,7 @@ export function simulateReplay(
 /** Structural validation of runs and checkpoints; returns a reason or null. */
 export function checkShape(r: Replay): string | null {
   if (!Number.isInteger(r.ticks) || r.ticks < 0) return 'ticks must be a non-negative integer';
+  if (r.biomeMode !== undefined && !Number.isInteger(r.biomeMode)) return 'bad biomeMode';
   for (const run of r.runs) {
     if (!Array.isArray(run) || run.length !== 4) return 'bad run';
     if (run.some((v) => !Number.isInteger(v))) return 'bad run';
@@ -204,8 +211,9 @@ export function simulateTicks(
   ticks: number,
   opts: { onTick?: (s: SimState, tick: number) => void } = {},
 ): SimState {
-  const state = createState(r.seed);
-  const scratch = new StepScratch(r.seed);
+  const mode = r.biomeMode ?? 0;
+  const state = createState(r.seed, mode);
+  const scratch = new StepScratch(r.seed, { mode });
   const frames = decodeRuns(r.runs);
   for (let tick = 1; tick <= ticks; tick++) {
     const next = frames.next();
@@ -221,10 +229,11 @@ export function recordRun(
   ticks: number,
   policy: (s: SimState) => InputFrame,
   meta?: Record<string, unknown>,
+  biomeMode = 0,
 ): { replay: Replay; state: SimState } {
-  const state = createState(seed);
-  const rec = new Recorder(seed);
-  const scratch = new StepScratch(seed);
+  const state = createState(seed, biomeMode);
+  const rec = new Recorder(seed, biomeMode);
+  const scratch = new StepScratch(seed, { mode: biomeMode });
   for (let i = 0; i < ticks; i++) {
     const input = policy(state);
     step(state, input, scratch);
