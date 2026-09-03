@@ -1,0 +1,164 @@
+// three.js adapter (ADR 0001). Owns the scene, chunk meshes, sky, fog, lights and camera.
+import * as THREE from 'three';
+import type { ChunkMesh } from '../terrain/chunk.ts';
+import type { Atmosphere } from './atmosphere.ts';
+import { rgbToFloat } from './atmosphere.ts';
+import type { RenderPose } from './camera.ts';
+import { applyPose } from './camera.ts';
+import { chunkId, createTerrainMaterial, disposeMesh, toThreeMesh } from './chunkMesh.ts';
+import { Sky } from './sky.ts';
+
+export interface RendererOptions {
+  width: number;
+  height: number;
+  preserveDrawingBuffer?: boolean;
+  pixelRatio?: number;
+}
+
+export class Renderer {
+  readonly gl: THREE.WebGLRenderer;
+  readonly scene = new THREE.Scene();
+  readonly camera: THREE.PerspectiveCamera;
+  readonly info: { renderer: string; vendor: string; version: string };
+  private readonly sky = new Sky();
+  private readonly sun = new THREE.DirectionalLight(0xffffff, 2);
+  private readonly hemi = new THREE.HemisphereLight(0xffffff, 0x808080, 1);
+  private readonly fog = new THREE.FogExp2(0xff9a5c, 0.004);
+  private readonly material = createTerrainMaterial();
+  private readonly chunks = new Map<string, THREE.Mesh>();
+  private readonly pixel = new Uint8Array(4);
+  private width: number;
+  private height: number;
+
+  constructor(canvas: HTMLCanvasElement, opts: RendererOptions) {
+    THREE.ColorManagement.enabled = false;
+    this.gl = new THREE.WebGLRenderer({
+      canvas,
+      antialias: false,
+      preserveDrawingBuffer: opts.preserveDrawingBuffer ?? false,
+      powerPreference: 'high-performance',
+    });
+    this.gl.outputColorSpace = THREE.LinearSRGBColorSpace;
+    this.gl.setPixelRatio(opts.pixelRatio ?? 1);
+    this.width = opts.width;
+    this.height = opts.height;
+    this.gl.setSize(opts.width, opts.height, false);
+    this.camera = new THREE.PerspectiveCamera(66, opts.width / opts.height, 0.5, 800);
+    this.scene.fog = this.fog;
+    this.scene.add(this.sky.mesh, this.sun, this.hemi);
+    const ctx = this.gl.getContext();
+    const dbg = ctx.getExtension('WEBGL_debug_renderer_info');
+    this.info = {
+      renderer: dbg
+        ? String(ctx.getParameter(dbg.UNMASKED_RENDERER_WEBGL))
+        : String(ctx.getParameter(ctx.RENDERER)),
+      vendor: dbg
+        ? String(ctx.getParameter(dbg.UNMASKED_VENDOR_WEBGL))
+        : String(ctx.getParameter(ctx.VENDOR)),
+      version: String(ctx.getParameter(ctx.VERSION)),
+    };
+  }
+
+  setAtmosphere(a: Atmosphere): void {
+    this.sky.apply(a);
+    const [hr, hg, hb] = rgbToFloat(a.horizon);
+    this.fog.color.setRGB(hr, hg, hb);
+    this.fog.density = a.fogDensity;
+    this.scene.background = new THREE.Color(hr, hg, hb);
+    const [sr, sg, sb] = rgbToFloat(a.sun);
+    this.sun.color.setRGB(sr, sg, sb);
+    this.sun.intensity = a.sunIntensity;
+    this.sun.position.set(a.sunDir[0], a.sunDir[1], a.sunDir[2]);
+    const [zr, zg, zb] = rgbToFloat(a.zenith);
+    this.hemi.color.setRGB(hr * 0.6 + zr * 0.4, hg * 0.6 + zg * 0.4, hb * 0.6 + zb * 0.4);
+    this.hemi.groundColor.setRGB(0.55, 0.45, 0.3);
+    this.hemi.intensity = a.hemiIntensity;
+  }
+
+  addChunk(chunk: ChunkMesh): void {
+    const id = chunkId(chunk.cx, chunk.cy, chunk.cz);
+    if (this.chunks.has(id)) return;
+    const mesh = toThreeMesh(chunk, this.material);
+    this.chunks.set(id, mesh);
+    this.scene.add(mesh);
+  }
+
+  hasChunk(cx: number, cy: number, cz: number): boolean {
+    return this.chunks.has(chunkId(cx, cy, cz));
+  }
+
+  removeChunk(cx: number, cy: number, cz: number): void {
+    const id = chunkId(cx, cy, cz);
+    const mesh = this.chunks.get(id);
+    if (!mesh) return;
+    this.scene.remove(mesh);
+    disposeMesh(mesh);
+    this.chunks.delete(id);
+  }
+
+  /** Removes every chunk whose slab is below `minCz`. */
+  evictBelow(minCz: number): number {
+    let n = 0;
+    for (const [id, mesh] of this.chunks) {
+      const cz = Number(id.split(',')[2]);
+      if (cz < minCz) {
+        this.scene.remove(mesh);
+        disposeMesh(mesh);
+        this.chunks.delete(id);
+        n++;
+      }
+    }
+    return n;
+  }
+
+  get chunkCount(): number {
+    return this.chunks.size;
+  }
+
+  triangleCount(): number {
+    let n = 0;
+    for (const m of this.chunks.values()) n += m.geometry.getAttribute('position').count / 3;
+    return n;
+  }
+
+  resize(width: number, height: number): void {
+    this.width = width;
+    this.height = height;
+    this.gl.setSize(width, height, false);
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+  }
+
+  render(pose: RenderPose): void {
+    applyPose(this.camera, pose);
+    this.sky.follow(pose.x, pose.y, pose.z);
+    this.gl.render(this.scene, this.camera);
+  }
+
+  /** Reads one pixel (x right, y down, in canvas pixels). */
+  readPixel(x: number, y: number): [number, number, number, number] {
+    const ctx = this.gl.getContext();
+    ctx.readPixels(x, this.height - 1 - y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, this.pixel);
+    return [this.pixel[0]!, this.pixel[1]!, this.pixel[2]!, this.pixel[3]!];
+  }
+
+  /** FNV-1a over the whole RGBA frame buffer. */
+  frameHash(): number {
+    const ctx = this.gl.getContext();
+    const buf = new Uint8Array(this.width * this.height * 4);
+    ctx.readPixels(0, 0, this.width, this.height, ctx.RGBA, ctx.UNSIGNED_BYTE, buf);
+    let h = 0x811c9dc5;
+    for (let i = 0; i < buf.length; i++) {
+      h ^= buf[i]!;
+      h = Math.imul(h, 0x01000193);
+    }
+    return h >>> 0;
+  }
+
+  dispose(): void {
+    for (const m of this.chunks.values()) disposeMesh(m);
+    this.chunks.clear();
+    this.material.dispose();
+    this.gl.dispose();
+  }
+}

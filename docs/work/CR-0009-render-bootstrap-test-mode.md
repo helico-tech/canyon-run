@@ -1,7 +1,7 @@
 ---
 id: CR-0009
 epic: EPIC-04
-status: todo
+status: done
 ---
 # CR-0009 Render bootstrap and test mode
 
@@ -15,3 +15,9 @@ status: todo
 - Zero console errors apart from the SwiftShader ReadPixels warning.
 
 **Verification.** `pnpm build`, a `tools/headless/shot.ts` script producing `docs/evidence/2026-09-03-CR-0009/start.png`.
+
+**Delivered notes.** Chunks are built in-thread by `src/app/world.ts` (ring
+s−1…s+10) until CR-0010 moves them to a worker. The top-centre probe is the rock
+roof, not sky: the canyon is covered (ADR 0004). `Game` already steps the sim
+with the scripted pilot so headless runs fly. Evidence in
+`docs/evidence/2026-09-03-CR-0009/`.
