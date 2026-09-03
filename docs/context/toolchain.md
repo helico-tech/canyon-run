@@ -43,11 +43,14 @@ globals. `src/sim/lint-gate.test.ts` proves the rules fire. See ADR 0002.
 | Command | Purpose |
 |---|---|
 | `pnpm work:new EPIC-NN slug --title "..."` | allocates the next `CR-NNNN` story file in `docs/work/` |
-| `pnpm issues new slug --priority P2 --title "..."` | files an issue in `docs/issues/` with generated frontmatter |
-| `pnpm issues list [--status open]` | queue, highest priority first, oldest first within a priority |
-| `pnpm issues triage <file> --work CR-NNNN` | promotes an issue to a unit of work |
-| `pnpm issues resolve <file> --work CR-NNNN --commit <sha> --note "..."` | resolves in place |
+| `pnpm issue new slug --priority P2 --title "..."` | files an issue in `docs/issues/` with generated frontmatter |
+| `pnpm issue list [--status open]` | queue, highest priority first, oldest first within a priority |
+| `pnpm issue triage <file> --work CR-NNNN` | promotes an issue to a unit of work |
+| `pnpm issue resolve <file> --work CR-NNNN --commit <sha> --note "..."` | resolves in place |
 | `pnpm docs:validate` | layout and frontmatter validation (also run by the pre-push hook) |
+
+The script is `pnpm issue` (singular): `pnpm issues` is a pnpm built-in that
+opens the package's bug tracker.
 
 The pre-push hook (`scripts/git-hooks/pre-push`, installed by `pnpm install`
 through `prepare`) runs `pnpm check` and `pnpm docs:validate`.
