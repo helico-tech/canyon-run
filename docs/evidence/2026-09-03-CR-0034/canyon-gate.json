@@ -1,0 +1,251 @@
+{
+ "ok": true,
+ "gates": [
+  {
+   "name": "frame 0: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom edge density 14.47 %"
+  },
+  {
+   "name": "frame 0: colour variety",
+   "ok": true,
+   "detail": "423 unique 4-bit colours"
+  },
+  {
+   "name": "frame 0: edge density",
+   "ok": true,
+   "detail": "13.99 %"
+  },
+  {
+   "name": "frame 0: exposure",
+   "ok": true,
+   "detail": "mean luminance 50.7"
+  },
+  {
+   "name": "frame 30: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom edge density 14.65 %"
+  },
+  {
+   "name": "frame 30: colour variety",
+   "ok": true,
+   "detail": "323 unique 4-bit colours"
+  },
+  {
+   "name": "frame 30: edge density",
+   "ok": true,
+   "detail": "13.22 %"
+  },
+  {
+   "name": "frame 30: exposure",
+   "ok": true,
+   "detail": "mean luminance 50.2"
+  },
+  {
+   "name": "frame 60: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom edge density 16.11 %"
+  },
+  {
+   "name": "frame 60: colour variety",
+   "ok": true,
+   "detail": "342 unique 4-bit colours"
+  },
+  {
+   "name": "frame 60: edge density",
+   "ok": true,
+   "detail": "15 %"
+  },
+  {
+   "name": "frame 60: exposure",
+   "ok": true,
+   "detail": "mean luminance 53.4"
+  },
+  {
+   "name": "frame 90: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom edge density 15.77 %"
+  },
+  {
+   "name": "frame 90: colour variety",
+   "ok": true,
+   "detail": "341 unique 4-bit colours"
+  },
+  {
+   "name": "frame 90: edge density",
+   "ok": true,
+   "detail": "14.87 %"
+  },
+  {
+   "name": "frame 90: exposure",
+   "ok": true,
+   "detail": "mean luminance 48.3"
+  },
+  {
+   "name": "frame 120: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom edge density 13.51 %"
+  },
+  {
+   "name": "frame 120: colour variety",
+   "ok": true,
+   "detail": "335 unique 4-bit colours"
+  },
+  {
+   "name": "frame 120: edge density",
+   "ok": true,
+   "detail": "11.02 %"
+  },
+  {
+   "name": "frame 120: exposure",
+   "ok": true,
+   "detail": "mean luminance 44.8"
+  },
+  {
+   "name": "frame 150: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom edge density 14.9 %"
+  },
+  {
+   "name": "frame 150: colour variety",
+   "ok": true,
+   "detail": "332 unique 4-bit colours"
+  },
+  {
+   "name": "frame 150: edge density",
+   "ok": true,
+   "detail": "14.19 %"
+  },
+  {
+   "name": "frame 150: exposure",
+   "ok": true,
+   "detail": "mean luminance 46.6"
+  },
+  {
+   "name": "frame 180: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom edge density 15.42 %"
+  },
+  {
+   "name": "frame 180: colour variety",
+   "ok": true,
+   "detail": "316 unique 4-bit colours"
+  },
+  {
+   "name": "frame 180: edge density",
+   "ok": true,
+   "detail": "13.07 %"
+  },
+  {
+   "name": "frame 180: exposure",
+   "ok": true,
+   "detail": "mean luminance 45.8"
+  },
+  {
+   "name": "frame 210: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom edge density 13.3 %"
+  },
+  {
+   "name": "frame 210: colour variety",
+   "ok": true,
+   "detail": "331 unique 4-bit colours"
+  },
+  {
+   "name": "frame 210: edge density",
+   "ok": true,
+   "detail": "12.97 %"
+  },
+  {
+   "name": "frame 210: exposure",
+   "ok": true,
+   "detail": "mean luminance 46.6"
+  },
+  {
+   "name": "frame 240: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom edge density 14.28 %"
+  },
+  {
+   "name": "frame 240: colour variety",
+   "ok": true,
+   "detail": "318 unique 4-bit colours"
+  },
+  {
+   "name": "frame 240: edge density",
+   "ok": true,
+   "detail": "12.87 %"
+  },
+  {
+   "name": "frame 240: exposure",
+   "ok": true,
+   "detail": "mean luminance 49.9"
+  },
+  {
+   "name": "frame 270: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom edge density 14.35 %"
+  },
+  {
+   "name": "frame 270: colour variety",
+   "ok": true,
+   "detail": "350 unique 4-bit colours"
+  },
+  {
+   "name": "frame 270: edge density",
+   "ok": true,
+   "detail": "13.22 %"
+  },
+  {
+   "name": "frame 270: exposure",
+   "ok": true,
+   "detail": "mean luminance 55.1"
+  },
+  {
+   "name": "frame 299: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom edge density 15.23 %"
+  },
+  {
+   "name": "frame 299: colour variety",
+   "ok": true,
+   "detail": "365 unique 4-bit colours"
+  },
+  {
+   "name": "frame 299: edge density",
+   "ok": true,
+   "detail": "13.47 %"
+  },
+  {
+   "name": "frame 299: exposure",
+   "ok": true,
+   "detail": "mean luminance 56.9"
+  },
+  {
+   "name": "horizon glow visible in the run",
+   "ok": true,
+   "detail": "max fog fraction 0.0088"
+  },
+  {
+   "name": "temporal change",
+   "ok": true,
+   "detail": "23e4476e vs 37514157 at frame 60"
+  },
+  {
+   "name": "no console errors",
+   "ok": true,
+   "detail": "none"
+  },
+  {
+   "name": "HUD frame drawn",
+   "ok": true,
+   "detail": "altitude bar border pixel 244,232,255 at 615,180"
+  },
+  {
+   "name": "sim checksum equals Node",
+   "ok": true,
+   "detail": "5b52eebe vs 5b52eebe"
+  }
+ ],
+ "ms": 15848
+}

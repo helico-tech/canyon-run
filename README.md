@@ -50,8 +50,12 @@ hoodoo desert, floating archipelago, and a Death-Star-style trench run.
 
 Score accrues every tick at a rate that grows with the square of your speed
 factor, doubles when you touch distance to rock and rises with a proximity
-streak. Events pay bonuses: CLOSE, SO CLOSE, THREADED, and passing a biome GATE.
-Each segment narrows the canyon, densifies features and raises the speed floor.
+streak. Events pay bonuses: CLOSE, SO CLOSE, THREADED, passing a biome GATE, and
+DODGED for crossing an adversary station with its body close by. Adversaries are
+moving kill volumes in the cross-section of the tube (hoops, blades, presses,
+jaws, orbiting shards, bouncing blocks), one set per biome; they never move along
+the tube, and a fairness audit proves each one can be passed. Each segment narrows
+the canyon, densifies features, raises the speed floor and quickens the adversaries.
 
 ## Replays
 

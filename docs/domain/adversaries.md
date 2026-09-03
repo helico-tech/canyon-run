@@ -1,0 +1,82 @@
+# Adversaries
+
+Moving kill volumes that live in the cross-section of the tube (ADR 0007,
+spec `docs/specs/2026-09-03-adversaries.md`). They never move along z: each
+one is a *station* pinned to a z plane, posed by a closed-form law of the tick,
+so a replay needs no extra state and the renderer draws exactly what the sim
+tests.
+
+## Stations
+
+A station is decoded from `(seed, biome mode, segment, station z)` by a hash
+and rejected by placement rules; nothing is stored. Stations start at
+`ADV_START` (600 u), are spaced by the biome's `spacing` with probability
+`prob`, and are gathered for a window of `ADV_WINDOW` (700 u) around the plane.
+Every station carries a shape, a motion law, a spin, a body size (`r` half
+height, `len` half width, `hz` half depth), a period, a phase, and a core
+radius used by the fairness rules.
+
+## Archetypes (stable ids; replays depend on them)
+
+| id | body | motion | where it lives |
+|---|---|---|---|
+| 0 | spinning blade | static | beside or above the core |
+| 1 | bouncing block | bounce in x | above or below the core |
+| 2 | piston | sweep in y | a press dipping into the core from the roomier side |
+| 3 | drifting hoop | sweep in x | around the core; its opening always overlaps the core |
+| 4 | orbiting shard | orbit | around the core at `core + body + 2` |
+| 5 | closing jaws | close as the plane approaches | either side of the core, gap ≥ `gapMin` |
+| 6 | sweeping spinning blade | sweep in x | beside the core only (never crossing) |
+
+Motion is transcendental-free: triangle and swing waves, a 32-entry circle
+table, and an approach-driven law for jaws (the gap depends on the plane's
+distance, not on time).
+
+## Biome sets
+
+| biome | archetypes | spacing | prob |
+|---|---|---|---|
+| canyon | hoops, bouncing blocks | 260 | 0.8 |
+| cave | hoops | 240 | 0.8 |
+| crystal spires | spinning blades, hoops | 260 | 0.8 |
+| lava rift | pistons (presses), jaws | 240 | 0.85 |
+| hoodoo desert | bouncing blocks, orbiting shards | 220 | 0.85 |
+| floating archipelago | orbiting shards, hoops | 260 | 0.8 |
+| trench run | jaws, spinning blades | 200 | 0.9 |
+
+Difficulty scales station density (`ADVERSARY_FACTOR`) and motion speed
+(`ADVERSARY_SPEED`) per segment; see `difficulty.md`.
+
+## Fairness rules (by construction)
+
+- Segment 0 never places a body on the core; from `ADV_CORE_FROM` (segment 4)
+  bodies may cross it.
+- Wall and floor margins derive from the biome's own noise amplitudes.
+- A body crossing the core does not spin and is clamped so a 3 u vertical
+  lane remains for the hull (8 u wide, under 3 u tall). A vertical crosser is
+  a press: it dips in from the roomier side and never passes through.
+- No body moves faster than `ADV_MAX_STEP` (1.5 u per tick), and every body is
+  at least 2 u deep along z so the two collision sub-steps cannot skip it.
+
+## Fairness audit (by proof)
+
+`pnpm adv:audit --seeds 1-8 --length 10000` decodes every station and checks
+the speed bound, the z depth, a clear level-hull position inside the core at
+every tick of the period, and that such positions stay reachable under a
+lateral speed of 1 u per tick from every start phase. It then flies the
+dodging pilot at full throttle and reports survival and DODGED counts. A short
+version runs under Vitest.
+
+## Collision and scoring
+
+The plane's hull (centre sphere plus nose, tail, wing and top probes) is
+tested against the nearer of rock and adversary at the tick's midpoint, its
+end, and the exact crossing of a station plane. The nearer distance also feeds
+proximity, the streak, CLOSE and THREADED. Crossing a station plane alive with
+a body within `DODGE_DIST` pays the DODGED bonus (`scoring.md`).
+
+## Rendering
+
+One instanced mesh per shape, unlit in the biome accent and breathing toward
+white over the period; a post-and-lintel frame on the walls fades in from
+400 u so a station is telegraphed before its body is readable.

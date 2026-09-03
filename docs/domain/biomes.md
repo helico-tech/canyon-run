@@ -55,3 +55,5 @@ start screen's select, the HUD seed label, `node src/cli/replay.ts run --biome`
 and `pnpm headless -- --biome`. Names: auto, canyon, cave, crystal-spires,
 lava-rift, hoodoo-desert, floating-archipelago, trench-run (a prefix before the
 dash also works).
+
+Each biome also carries an adversary set (which archetypes, how often); see `adversaries.md`.
