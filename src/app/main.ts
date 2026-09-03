@@ -22,6 +22,7 @@ if (test) {
   game.render();
 } else {
   // Bootstrap demo loop: the scripted pilot flies at 60 Hz until CR-0012 adds input.
+  await game.settle();
   let last = performance.now();
   let acc = 0;
   const frame = (now: number): void => {

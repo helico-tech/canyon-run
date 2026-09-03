@@ -1,53 +1,58 @@
-// In-thread world assembly for the bootstrap: keeps a ring of slabs resident by
-// building chunks synchronously. CR-0010 moves generation to a worker.
+// Keeps the renderer's chunk set in step with the plane: asks the terrain client
+// for the ring around the current slab, uploads delivered chunks (budgeted per
+// frame in real time, all at once when settling), and evicts behind.
 import type { Renderer } from '../render/renderer.ts';
-import { buildChunk, createChunkScratch, slabCandidates } from '../terrain/chunk.ts';
 import { CHUNK_SIZE } from '../terrain/march.ts';
+import { TerrainClient } from './terrainClient.ts';
 
-export const SLABS_BEHIND = 1;
-export const SLABS_AHEAD = 10;
+export const UPLOADS_PER_FRAME = 4;
 
 export class World {
   readonly seed: number;
   private readonly renderer: Renderer;
-  private readonly scratch = createChunkScratch();
-  private readonly built = new Set<number>();
-  generatedChunks = 0;
-  generateMs = 0;
+  private readonly terrain: TerrainClient;
 
   constructor(seed: number, renderer: Renderer) {
     this.seed = seed;
     this.renderer = renderer;
+    this.terrain = new TerrainClient(seed);
   }
 
-  private buildSlab(cz: number): void {
-    if (this.built.has(cz)) return;
-    const t0 = performance.now();
-    for (const [cx, cy] of slabCandidates(this.seed, cz)) {
-      const mesh = buildChunk(this.seed, cx, cy, cz, this.scratch);
-      if (mesh) {
-        this.renderer.addChunk(mesh);
-        this.generatedChunks++;
-      }
-    }
-    this.built.add(cz);
-    this.generateMs += performance.now() - t0;
-  }
-
-  /** Ensures slabs [s − 1, s + 10] exist around the plane's z and evicts older ones. */
-  update(z: number): void {
+  /** Real-time update: plan for z, upload a few chunks, evict behind. */
+  update(z: number, maxUploads = UPLOADS_PER_FRAME): void {
     const s = Math.floor(z / CHUNK_SIZE);
-    for (let cz = s - SLABS_BEHIND; cz <= s + SLABS_AHEAD; cz++) this.buildSlab(cz);
-    for (const cz of this.built) if (cz < s - SLABS_BEHIND) this.built.delete(cz);
-    this.renderer.evictBelow(s - SLABS_BEHIND);
+    const evictBelow = this.terrain.setSlab(s);
+    for (const chunk of this.terrain.takeReady(maxUploads)) this.renderer.addChunk(chunk);
+    this.renderer.evictBelow(evictBelow);
   }
 
-  stats(): { resident: number; generated: number; ms: number; triangles: number } {
+  /** Waits for the whole ring, then uploads everything (deterministic frames). */
+  async settle(z: number): Promise<void> {
+    this.update(z, 0);
+    await this.terrain.whenIdle();
+    this.update(z, Infinity);
+  }
+
+  stats(): {
+    resident: number;
+    generated: number;
+    ms: number;
+    triangles: number;
+    pending: number;
+    slabs: number;
+  } {
+    const t = this.terrain.stats();
     return {
       resident: this.renderer.chunkCount,
-      generated: this.generatedChunks,
-      ms: Math.round(this.generateMs),
+      generated: t.generated,
+      ms: t.ms,
       triangles: this.renderer.triangleCount(),
+      pending: t.pending,
+      slabs: t.resident,
     };
+  }
+
+  dispose(): void {
+    this.terrain.dispose();
   }
 }

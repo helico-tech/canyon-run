@@ -4,13 +4,21 @@ import type { Game } from './game.ts';
 
 export interface GameTestApi {
   ready: boolean;
-  step(n?: number): Record<string, number | string>;
+  step(n?: number): Promise<Record<string, number | string>>;
+  settle(): Promise<Record<string, number | string>>;
   state(): Record<string, number | string>;
   setInput(input: InputFrame | null): void;
   frameHash(): string;
   readPixel(x: number, y: number): [number, number, number, number];
   dataURL(): string;
-  chunkStats(): { resident: number; generated: number; ms: number; triangles: number };
+  chunkStats(): {
+    resident: number;
+    generated: number;
+    ms: number;
+    triangles: number;
+    pending: number;
+    slabs: number;
+  };
   render(): void;
 }
 
@@ -30,8 +38,14 @@ export function isTestMode(): boolean {
 export function installTestApi(game: Game, canvas: HTMLCanvasElement, simVersion: string): void {
   window.__game = {
     ready: true,
-    step(n = 1) {
+    async step(n = 1) {
       game.step(n);
+      await game.settle();
+      game.render();
+      return game.snapshot();
+    },
+    async settle() {
+      await game.settle();
       game.render();
       return game.snapshot();
     },

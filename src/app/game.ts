@@ -59,6 +59,11 @@ export class Game {
     this.world.update(this.state.z);
   }
 
+  /** Waits until the chunk ring around the plane is complete (test mode). */
+  settle(): Promise<void> {
+    return this.world.settle(this.state.z);
+  }
+
   pose(): RenderPose {
     const s = this.state;
     const tV = (s.speed - C.MIN_SPEED) / (C.MAX_SPEED - C.MIN_SPEED);
