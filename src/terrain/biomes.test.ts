@@ -156,8 +156,7 @@ test('the clear zone around a boundary has no features except the gate', () => {
 
 test('biome modes force a special or canyon only, and names round-trip', () => {
   for (const special of REGISTERED) {
-    for (let i = 1; i < 12; i += 2) expect(biomeForSegment(1, i, special.id)).toBe(special);
-    expect(biomeForSegment(1, 2, special.id)).toBe(CANYON_BIOME);
+    for (let i = 0; i < 12; i++) expect(biomeForSegment(1, i, special.id)).toBe(special);
     expect(parseBiomeMode(special.name)).toBe(special.id);
     expect(biomeModeName(special.id)).toBe(special.name);
   }

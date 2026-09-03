@@ -10,8 +10,8 @@ import {
 import { hash1, lerp, smoothstep } from './noise.ts';
 import type { BiomePalette, Rgb } from './palette.ts';
 import { CANYON_PALETTE } from './palette.ts';
-import type { FieldParams } from './params.ts';
-import { CANYON } from './params.ts';
+import type { AdversaryParams, FieldParams } from './params.ts';
+import { CANYON, NO_ADVERSARIES } from './params.ts';
 
 export interface BiomeAtmosphere {
   fogDensity: number;
@@ -28,6 +28,12 @@ export interface BiomeDef {
   params: FieldParams;
   palette: BiomePalette;
   atmosphere: BiomeAtmosphere;
+  /** Optional: absent means no adversaries. */
+  adversaries?: AdversaryParams;
+}
+
+export function adversariesOf(b: BiomeDef): AdversaryParams {
+  return b.adversaries ?? NO_ADVERSARIES;
 }
 
 export const CANYON_BIOME: BiomeDef = Object.freeze<BiomeDef>({
@@ -66,11 +72,13 @@ export const MODE_AUTO = 0;
 export const MODE_CANYON = 255;
 
 export function biomeForSegment(seed: number, index: number, mode = MODE_AUTO): BiomeDef {
-  if (index % 2 === 0 || SPECIALS.length === 0 || mode === MODE_CANYON) return CANYON_BIOME;
+  if (mode === MODE_CANYON || SPECIALS.length === 0) return CANYON_BIOME;
   if (mode !== MODE_AUTO) {
+    // A chosen biome is flown from the very first segment (the hub does not alternate).
     const forced = SPECIALS.find((b) => b.id === mode);
     if (forced) return forced;
   }
+  if (index % 2 === 0) return CANYON_BIOME;
   return SPECIALS[hash1(index, seed ^ 0x42a5) % SPECIALS.length]!;
 }
 

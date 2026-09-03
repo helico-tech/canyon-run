@@ -47,8 +47,9 @@ height, coreYFrac, detail amplitudes and feature settings are per biome.
 
 ## Biome selector
 
-`biomeMode` (0 auto, 255 canyon only, or a special's id) forces every odd
-segment to one special. It is part of `SimState` (hashed), the replay header
+`biomeMode` (0 auto, 255 canyon only, or a special's id) makes every segment,
+including the first, that biome (difficulty still rises per segment and gates
+still stand at boundaries). It is part of `SimState` (hashed), the replay header
 (`biomeMode`, absent means 0), the URL hash (`#seed=…&biome=trench-run`), the
 start screen's select, the HUD seed label, `node src/cli/replay.ts run --biome`
 and `pnpm headless -- --biome`. Names: auto, canyon, cave, crystal-spires,
