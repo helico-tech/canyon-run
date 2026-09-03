@@ -31,3 +31,29 @@ node tools/headless/shot.ts --seed 1 --ticks 300 --out runs/shot.png   # one fra
 `tools/headless/serve.ts` serves `dist/` over HTTP (Playwright refuses `file:`
 URLs); `tools/headless/browser.ts` opens the page, waits for `__game.ready`, and
 collects console errors while ignoring the known SwiftShader ReadPixels warning.
+
+## Replay-driven runs and gates
+
+```
+pnpm headless -- --seed 1 --frames 300 --every 30 --out runs/seed1          # pilot flies seed 1
+pnpm headless -- --replay tests/replays/seed-1.json --frames 300 --out runs/r1   # drives a recorded replay
+pnpm headless:golden                                                        # rewrite tests/golden/<renderer>.json
+pnpm test:e2e                                                               # build + Playwright spec (gates + golden hashes)
+```
+
+`tools/headless/run.ts` steps the sim one tick per frame (settling the chunk
+ring first), records `{frame, tick, hash, checksum, x, y, z, speed, score,
+proximity}` per frame in `frames.jsonl`, dumps a PNG every `--every` frames,
+computes `stats.json` (mean luminance, unique 4-bit colours, edge density, fog
+fractions, dominant colours, 3×3 means), builds `sheet.png`, and writes
+`gate.json`. It exits non-zero when a gate fails.
+
+Gates (`tools/headless/gate.ts`), per dumped frame: not fogged out, terrain in
+the bottom band, colour variety (> 40 quantised colours; a single biome
+quantises to roughly 80–120), edge density 1–40 %, exposure 20–200. Per run:
+horizon glow visible somewhere, frame hash changes between frame 0 and 60, zero
+console errors, and the browser's final sim checksum equals Node's.
+
+Golden hashes are keyed by renderer (`swiftshader`, `llvmpipe`, …); a run on a
+renderer without a golden skips the exact comparison with a notice. Regenerate
+deliberately with `pnpm headless:golden` after an intentional visual change.

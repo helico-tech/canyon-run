@@ -6,6 +6,8 @@ import { Renderer } from '../render/renderer.ts';
 import { C } from '../sim/constants.ts';
 import type { InputFrame } from '../sim/input.ts';
 import { createPilot } from '../sim/pilot.ts';
+import { decodeRuns, isReplay } from '../sim/replay.ts';
+import { ZERO_INPUT } from '../sim/input.ts';
 import { checksum, createState } from '../sim/state.ts';
 import type { SimState } from '../sim/state.ts';
 import { step, StepScratch } from '../sim/step.ts';
@@ -49,6 +51,19 @@ export class Game {
   /** Fixed input for the next ticks (null = scripted pilot). */
   setInput(input: InputFrame | null): void {
     this.forcedInput = input;
+  }
+
+  /** Feeds a replay's inputs tick by tick (zero input after it ends). The seed must match. */
+  loadReplay(replay: unknown): void {
+    if (!isReplay(replay)) throw new Error('not a replay');
+    if (replay.seed !== this.state.seed)
+      throw new Error(`replay seed ${replay.seed} != game seed ${this.state.seed}`);
+    const frames = decodeRuns(replay.runs);
+    this.forcedInput = null;
+    this.pilot = () => {
+      const next = frames.next();
+      return next.done ? ZERO_INPUT : next.value;
+    };
   }
 
   step(n = 1): void {

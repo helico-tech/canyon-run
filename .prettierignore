@@ -6,3 +6,6 @@ docs/
 runs/
 .playwright-cli/
 tests/replays/
+tests/golden/
+test-results/
+playwright-report/

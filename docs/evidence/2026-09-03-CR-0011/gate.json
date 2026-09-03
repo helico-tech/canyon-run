@@ -1,0 +1,151 @@
+{
+ "ok": true,
+ "gates": [
+  {
+   "name": "frame 0: not fogged out",
+   "ok": true,
+   "detail": "fog fraction 0.0096"
+  },
+  {
+   "name": "frame 0: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom fog fraction 0"
+  },
+  {
+   "name": "frame 0: colour variety",
+   "ok": true,
+   "detail": "87 unique 4-bit colours"
+  },
+  {
+   "name": "frame 0: edge density",
+   "ok": true,
+   "detail": "2.08 %"
+  },
+  {
+   "name": "frame 0: exposure",
+   "ok": true,
+   "detail": "mean luminance 46.8"
+  },
+  {
+   "name": "frame 30: not fogged out",
+   "ok": true,
+   "detail": "fog fraction 0.0047"
+  },
+  {
+   "name": "frame 30: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom fog fraction 0"
+  },
+  {
+   "name": "frame 30: colour variety",
+   "ok": true,
+   "detail": "87 unique 4-bit colours"
+  },
+  {
+   "name": "frame 30: edge density",
+   "ok": true,
+   "detail": "2.14 %"
+  },
+  {
+   "name": "frame 30: exposure",
+   "ok": true,
+   "detail": "mean luminance 45.8"
+  },
+  {
+   "name": "frame 60: not fogged out",
+   "ok": true,
+   "detail": "fog fraction 0.0015"
+  },
+  {
+   "name": "frame 60: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom fog fraction 0"
+  },
+  {
+   "name": "frame 60: colour variety",
+   "ok": true,
+   "detail": "77 unique 4-bit colours"
+  },
+  {
+   "name": "frame 60: edge density",
+   "ok": true,
+   "detail": "2.28 %"
+  },
+  {
+   "name": "frame 60: exposure",
+   "ok": true,
+   "detail": "mean luminance 43.9"
+  },
+  {
+   "name": "frame 90: not fogged out",
+   "ok": true,
+   "detail": "fog fraction 0.0035"
+  },
+  {
+   "name": "frame 90: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom fog fraction 0"
+  },
+  {
+   "name": "frame 90: colour variety",
+   "ok": true,
+   "detail": "87 unique 4-bit colours"
+  },
+  {
+   "name": "frame 90: edge density",
+   "ok": true,
+   "detail": "1.74 %"
+  },
+  {
+   "name": "frame 90: exposure",
+   "ok": true,
+   "detail": "mean luminance 41.1"
+  },
+  {
+   "name": "frame 119: not fogged out",
+   "ok": true,
+   "detail": "fog fraction 0.0066"
+  },
+  {
+   "name": "frame 119: terrain in bottom band",
+   "ok": true,
+   "detail": "bottom fog fraction 0"
+  },
+  {
+   "name": "frame 119: colour variety",
+   "ok": true,
+   "detail": "88 unique 4-bit colours"
+  },
+  {
+   "name": "frame 119: edge density",
+   "ok": true,
+   "detail": "2.37 %"
+  },
+  {
+   "name": "frame 119: exposure",
+   "ok": true,
+   "detail": "mean luminance 45.8"
+  },
+  {
+   "name": "horizon glow visible in the run",
+   "ok": true,
+   "detail": "max fog fraction 0.0096"
+  },
+  {
+   "name": "temporal change",
+   "ok": true,
+   "detail": "030b676a vs 41f8711e at frame 60"
+  },
+  {
+   "name": "no console errors",
+   "ok": true,
+   "detail": "none"
+  },
+  {
+   "name": "sim checksum equals Node",
+   "ok": true,
+   "detail": "88cfde7c vs 88cfde7c"
+  }
+ ],
+ "ms": 6275
+}

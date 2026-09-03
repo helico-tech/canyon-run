@@ -1,7 +1,7 @@
 ---
 id: CR-0011
 epic: EPIC-04
-status: todo
+status: done
 ---
 # CR-0011 Headless runner, semantic gates, contact sheets
 
@@ -15,3 +15,10 @@ status: todo
 - Golden frame hashes stored under `tests/golden/<rendererKey>.json`; mismatch on the same renderer fails, other renderers skip with a notice.
 
 **Verification.** `pnpm test:e2e` green; `docs/evidence/2026-09-03-CR-0011/sheet.png` committed.
+
+**Delivered notes.** Gate thresholds differ from the story's draft: the canyon
+has a rock roof, so "sky in the top band" became "horizon glow visible in the
+run"; a single biome quantises to ~90 4-bit colours, so the variety floor is 40
+rather than 200. 120 frames at 640×360 take ~6 s. The e2e spec compares
+golden hashes only on the same renderer key. Evidence in
+`docs/evidence/2026-09-03-CR-0011/`.

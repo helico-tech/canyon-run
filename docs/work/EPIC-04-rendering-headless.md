@@ -1,6 +1,6 @@
 ---
 id: EPIC-04
-status: in-progress
+status: done
 ---
 # EPIC-04 Rendering and headless validation
 
