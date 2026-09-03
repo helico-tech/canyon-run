@@ -33,6 +33,9 @@ export class Game {
   private source: InputSource;
   private forcedInput: InputFrame | null = null;
   frames = 0;
+  /** Called after every render with the interpolated state (HUD hook). */
+  onRender: ((state: SimState, alpha: number) => void) | null = null;
+  replayLabel: string | null = null;
 
   constructor(canvas: HTMLCanvasElement, opts: GameOptions) {
     this.renderer = new Renderer(canvas, {
@@ -74,6 +77,7 @@ export class Game {
     if (replay.seed !== this.state.seed)
       throw new Error(`replay seed ${replay.seed} != game seed ${this.state.seed}`);
     const frames = decodeRuns(replay.runs);
+    this.replayLabel = `replay ${replay.ticks} ticks`;
     this.setSource(() => {
       const next = frames.next();
       return next.done ? ZERO_INPUT : next.value;
@@ -129,6 +133,7 @@ export class Game {
   render(alpha = 1): void {
     this.renderer.render(this.pose(alpha));
     this.frames++;
+    this.onRender?.(this.state, alpha);
   }
 
   snapshot(): Record<string, number | string> {

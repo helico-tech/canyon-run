@@ -1,5 +1,8 @@
+import './hud.css';
 import { SIM_VERSION } from '../sim/version.ts';
 import { Game } from './game.ts';
+import { createHud } from './hud.ts';
+import { HudProbe } from './hudProbe.ts';
 import { InputSampler } from './inputSampler.ts';
 import { advance } from './loop.ts';
 import { isLocked, requestLock } from './pointerLock.ts';
@@ -21,6 +24,14 @@ canvas.width = width;
 canvas.height = height;
 
 const game = new Game(canvas, { seed, width, height, preserveDrawingBuffer: test });
+const hud = createHud(root);
+hud.setSeed(seed);
+const hudProbe = new HudProbe(seed);
+let hudClock = 0;
+game.onRender = (state) => {
+  hudClock += 1000 / 60;
+  hud.update(state, hudProbe.view(state, game.replayLabel), test ? hudClock : performance.now());
+};
 
 if (test) {
   installTestApi(game, canvas, SIM_VERSION);

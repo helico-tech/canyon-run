@@ -15,6 +15,8 @@ export interface GateInput {
   frames: FrameRecord[];
   consoleErrors: string[];
   nodeChecksum: string | null;
+  /** Last dumped page frame, to check the HUD frame is drawn. */
+  hudAnchor?: { width: number; height: number; data: Uint8Array };
 }
 
 export interface GateResult {

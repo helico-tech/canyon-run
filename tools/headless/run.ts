@@ -97,9 +97,9 @@ export async function runHeadless(o: RunOptions): Promise<RunResult> {
       }),
     );
     if (f % o.every === 0 || f === o.frames - 1) {
-      const dataUrl = await page.evaluate(() => window.__game!.dataURL());
+      // Page screenshot: canvas plus the HUD overlay (what the player sees).
       const file = path.join(o.out, `frame-${String(f).padStart(4, '0')}.png`);
-      fs.writeFileSync(file, Buffer.from(dataUrl.split(',')[1]!, 'base64'));
+      await page.screenshot({ path: file });
       pngs.push({ file, label: `f${f} t${rec.tick} z${Math.round(Number(snap.z))}`, frame: f });
     }
   }
@@ -124,7 +124,8 @@ export async function runHeadless(o: RunOptions): Promise<RunResult> {
     const { state } = recordRun(seed, o.frames, createPilot(seed));
     nodeChecksum = hex32(checksum(state));
   }
-  const gates = runGates({ stats, frames, consoleErrors: log.errors, nodeChecksum });
+  const hudAnchor = readPng(pngs[pngs.length - 1]!.file);
+  const gates = runGates({ stats, frames, consoleErrors: log.errors, nodeChecksum, hudAnchor });
   const ok = gates.every((g) => g.ok);
   const key = rendererKey(info.renderer);
   fs.writeFileSync(

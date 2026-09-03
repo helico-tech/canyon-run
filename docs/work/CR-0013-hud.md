@@ -1,7 +1,7 @@
 ---
 id: CR-0013
 epic: EPIC-05
-status: todo
+status: done
 ---
 # CR-0013 HUD
 
@@ -17,3 +17,8 @@ status: todo
 - No layout thrash: updates use `transform` and `textContent` only.
 
 **Verification.** headless sheet with HUD visible in `docs/evidence/2026-09-03-CR-0013/`; `pnpm test:e2e`.
+
+**Delivered notes.** Edge glows come from a render-side field probe 8 u to
+each side (`hudProbe.ts`), not from the sim, which keeps replays untouched.
+Headless dumps switched from canvas `dataURL` to page screenshots so the HUD is
+part of the evidence and the gate. Evidence in `docs/evidence/2026-09-03-CR-0013/`.

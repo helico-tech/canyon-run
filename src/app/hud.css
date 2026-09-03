@@ -1,0 +1,193 @@
+#hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  color: #f4e8ff;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  user-select: none;
+}
+#hud .score {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+#hud .score .value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+#hud .score .mult {
+  font-size: 13px;
+  margin-top: 4px;
+  color: #2ee6d6;
+}
+#hud .speed {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+}
+#hud .speed .label {
+  font-size: 11px;
+  opacity: 0.8;
+}
+#hud .bar {
+  position: relative;
+  width: 160px;
+  height: 8px;
+  background: #3a2a48;
+  border: 1px solid #f4e8ff;
+  margin-top: 4px;
+}
+#hud .bar .fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  background: #2ee6d6;
+  transform-origin: left;
+  transform: scaleX(0);
+}
+#hud .speed .value {
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+#hud .alt {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 220px;
+  border: 2px solid #f4e8ff;
+  background: #3a2a48;
+}
+#hud .alt .zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 18%;
+  background: rgba(255, 60, 60, 0.55);
+}
+#hud .alt .marker {
+  position: absolute;
+  left: -6px;
+  width: 20px;
+  height: 4px;
+  background: #2ee6d6;
+  transform: translateY(-2px);
+}
+#hud .alt .tag {
+  position: absolute;
+  right: 18px;
+  font-size: 10px;
+  opacity: 0.8;
+}
+#hud .alt .tag.ceil {
+  top: -4px;
+}
+#hud .alt .tag.floor {
+  bottom: -4px;
+}
+#hud .horizon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 40%;
+  height: 2px;
+  margin-left: -20%;
+  background: rgba(244, 232, 255, 0.55);
+  transform-origin: center;
+}
+#hud .reticle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border: 2px solid rgba(244, 232, 255, 0.85);
+  border-radius: 50%;
+}
+#hud .reticle::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  background: #2ee6d6;
+  border-radius: 50%;
+}
+#hud .glow {
+  position: absolute;
+  opacity: 0;
+  background: #ff5c8a;
+}
+#hud .glow.l {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6%;
+  background: linear-gradient(to right, #ff5c8a, transparent);
+}
+#hud .glow.r {
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6%;
+  background: linear-gradient(to left, #ff5c8a, transparent);
+}
+#hud .glow.t {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 10%;
+  background: linear-gradient(to bottom, #ff5c8a, transparent);
+}
+#hud .glow.b {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 10%;
+  background: linear-gradient(to top, #ff5c8a, transparent);
+}
+#hud .seed {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  font-size: 12px;
+  opacity: 0.85;
+  text-align: right;
+}
+#hud .replay {
+  position: absolute;
+  left: 24px;
+  top: 18px;
+  font-size: 12px;
+  padding: 4px 8px;
+  border: 1px solid #2ee6d6;
+  color: #2ee6d6;
+}
+#hud .replay[hidden] {
+  display: none;
+}
+#hud .dead {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  font-size: 40px;
+  font-weight: 700;
+  color: #ff5c8a;
+}
+#hud .dead[hidden] {
+  display: none;
+}
