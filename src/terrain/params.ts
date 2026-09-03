@@ -193,3 +193,47 @@ export function shellBound(p: FieldParams): number {
     1.5 * p.warpAmp + p.ridgeAmp + p.floorNoiseAmp + p.ceilNoiseAmp + p.detailAmp + p.smoothK * 0.25
   );
 }
+
+/** Adversary stations for a biome (ADR 0007). `prob` 0 disables. Sizes in u, periods in ticks. */
+export interface AdversaryParams {
+  /** z lattice spacing (u). */
+  spacing: number;
+  /** Per-cell probability before the difficulty factor. */
+  prob: number;
+  /** Archetype ids (src/sim/adversaries.ts ARCHETYPES), picked uniformly by hash. */
+  archetypes: readonly number[];
+  /** Body half-thickness or tube radius. */
+  rMin: number;
+  rMax: number;
+  /** Half-length (box, blade), ring radius, or wedge half-base. */
+  lenMin: number;
+  lenMax: number;
+  /** Half depth along z (≥ 1). */
+  hz: number;
+  /** Integer ticks, before the difficulty divisor. */
+  periodMin: number;
+  periodMax: number;
+  /** Fractions [0, 1] of the free lateral / vertical span used as amplitude. */
+  ampX: number;
+  ampY: number;
+  /** CLOSE: the gap shrinks from the free width to gapMin over closeDist u of approach. */
+  gapMin: number;
+  closeDist: number;
+}
+
+export const NO_ADVERSARIES: AdversaryParams = Object.freeze<AdversaryParams>({
+  spacing: 100,
+  prob: 0,
+  archetypes: [],
+  rMin: 2,
+  rMax: 2,
+  lenMin: 4,
+  lenMax: 4,
+  hz: 1.5,
+  periodMin: 180,
+  periodMax: 180,
+  ampX: 0,
+  ampY: 0,
+  gapMin: 28,
+  closeDist: 200,
+});

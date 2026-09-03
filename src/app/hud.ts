@@ -28,7 +28,7 @@ function el(tag: string, cls: string, text = ''): HTMLElement {
   return e;
 }
 
-export const EVENT_NAMES = ['', 'close', 'so close', 'threaded', 'gate'];
+export const EVENT_NAMES = ['', 'close', 'so close', 'threaded', 'gate', 'dodged'];
 
 export function createHud(parent: HTMLElement): Hud {
   const root = el('div', '');

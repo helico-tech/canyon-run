@@ -3,6 +3,7 @@
 import { segmentAt } from '../terrain/biomes.ts';
 import { spineAt } from '../terrain/field.ts';
 import { createSpine } from '../terrain/spine.ts';
+import { AdversaryScratch } from './adversaries.ts';
 import { CollisionScratch, distanceAt, hullHits, prepareTick, proximityOf } from './collision.ts';
 import { C, speedFloor } from './constants.ts';
 import type { InputFrame } from './input.ts';
@@ -31,6 +32,7 @@ export class StepScratch {
   /** Ghost mode skips hull collision (tests and camera fly-throughs); proximity still works. */
   ghost: boolean;
   readonly collision: CollisionScratch;
+  readonly adversaries: AdversaryScratch;
   readonly basis = new Float64Array(9);
   readonly quat = new Float64Array(4);
   readonly spine = createSpine();
@@ -39,6 +41,7 @@ export class StepScratch {
     this.mode = opts.mode ?? 0;
     this.ghost = opts.ghost ?? false;
     this.collision = new CollisionScratch(this.seed, this.mode);
+    this.adversaries = new AdversaryScratch(this.seed, this.mode);
   }
 }
 
@@ -128,20 +131,43 @@ export function step(
   const ceilingNow = spineAt(s.seed, s.z, scratch.spine, s.biomeMode).ceilY - C.CEIL_MARGIN;
   if (s.y > ceilingNow) s.y = ceilingNow;
 
-  // Collision at the midpoint and the end of the tick's travel.
+  // Adversaries: analytic bodies posed at the tick's end; they never enter the field.
+  const adv = scratch.adversaries;
+  adv.activate(s.z);
+  adv.posesAt(s.tick + 1, s.z, z0 < s.z ? z0 : s.z, z0 < s.z ? s.z : z0);
+
+  // Collision at the midpoint and the end of the tick's travel, plus the exact
+  // crossing of an adversary station plane so thin bodies cannot be stepped over.
   const cs = scratch.collision;
   prepareTick(cs, x0, z0, s.x, s.z);
   const mx = (x0 + s.x) * 0.5;
   const my = (y0 + s.y) * 0.5;
   const mz = (z0 + s.z) * 0.5;
+  const crossing = adv.crossing(z0, s.z);
+  let crossX = 0;
+  let crossY = 0;
+  let crossZ = 0;
+  let crossHit = false;
+  if (crossing >= 0) {
+    crossZ = adv.stations[crossing]!.z;
+    const t = (crossZ - z0) / (s.z - z0);
+    crossX = x0 + (s.x - x0) * t;
+    crossY = y0 + (s.y - y0) * t;
+    crossHit = adv.hullHits(crossX, crossY, crossZ, s.qx, s.qy, s.qz, s.qw);
+  }
   if (
     !scratch.ghost &&
     (hullHits(cs, mx, my, mz, s.qx, s.qy, s.qz, s.qw) ||
-      hullHits(cs, s.x, s.y, s.z, s.qx, s.qy, s.qz, s.qw))
+      hullHits(cs, s.x, s.y, s.z, s.qx, s.qy, s.qz, s.qw) ||
+      adv.hullHits(mx, my, mz, s.qx, s.qy, s.qz, s.qw) ||
+      adv.hullHits(s.x, s.y, s.z, s.qx, s.qy, s.qz, s.qw) ||
+      crossHit)
   ) {
     s.alive = 0;
   }
-  const d = distanceAt(cs, s.x, s.y, s.z);
+  const dRock = distanceAt(cs, s.x, s.y, s.z);
+  const dAdv = adv.distance(s.x, s.y, s.z);
+  const d = dRock > -dAdv ? dRock : -dAdv; // nearer of rock and adversary, in field sign
   s.proximity = proximityOf(d);
   const near = -d; // metres to rock, roughly
   const sf = clamp((s.speed - C.MIN_SPEED) / (C.MAX_SPEED - C.MIN_SPEED), 0, 1);
@@ -178,18 +204,18 @@ export function step(
   const rX = b[0]!;
   const rY = b[1]!;
   const rZ = b[2]!;
-  const dl = distanceAt(
-    cs,
-    s.x + rX * C.THREAD_PROBE,
-    s.y + rY * C.THREAD_PROBE,
-    s.z + rZ * C.THREAD_PROBE,
-  );
-  const dr = distanceAt(
-    cs,
-    s.x - rX * C.THREAD_PROBE,
-    s.y - rY * C.THREAD_PROBE,
-    s.z - rZ * C.THREAD_PROBE,
-  );
+  const lx = s.x + rX * C.THREAD_PROBE;
+  const ly = s.y + rY * C.THREAD_PROBE;
+  const lz = s.z + rZ * C.THREAD_PROBE;
+  const rx = s.x - rX * C.THREAD_PROBE;
+  const ry = s.y - rY * C.THREAD_PROBE;
+  const rz = s.z - rZ * C.THREAD_PROBE;
+  const dlRock = distanceAt(cs, lx, ly, lz);
+  const dlAdv = -adv.distance(lx, ly, lz);
+  const dl = dlRock > dlAdv ? dlRock : dlAdv;
+  const drRock = distanceAt(cs, rx, ry, rz);
+  const drAdv = -adv.distance(rx, ry, rz);
+  const dr = drRock > drAdv ? drRock : drAdv;
   if (-dl < C.THREAD_DIST && -dr < C.THREAD_DIST) {
     s.threadTicks++;
     if (s.alive && s.threadTicks === C.THREAD_TICKS && s.cooldown === 0 && eventId === 0) {
@@ -197,6 +223,14 @@ export function step(
       eventPoints = C.THREAD_BONUS;
     }
   } else s.threadTicks = 0;
+  // DODGED: crossed a station's plane alive, at speed, with the body within DODGE_DIST of the hull centre.
+  if (crossing >= 0 && s.alive && sf > C.CLOSE_MIN_SF && s.cooldown === 0 && eventId === 0) {
+    const sd = adv.distance(crossX, crossY, crossZ);
+    if (sd < C.DODGE_DIST) {
+      eventId = 5;
+      eventPoints = C.DODGE_BONUS;
+    }
+  }
   // Passing a biome gate (segment boundary) while alive pays a bonus.
   if (s.alive && segmentAt(s.z).index > segBefore) {
     eventId = 4;
