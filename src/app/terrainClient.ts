@@ -11,8 +11,14 @@ export interface TerrainStats {
   ms: number;
 }
 
+/** Workers to run: slabs are dealt round-robin (even/odd), halving wall time per slab on 4+ cores. */
+export function workerCount(): number {
+  const cores = typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency ?? 2) : 2;
+  return cores >= 4 ? 2 : 1;
+}
+
 export class TerrainClient {
-  private readonly worker: Worker;
+  private readonly workers: Worker[] = [];
   private readonly ring = new SlabRing();
   private readonly ready: ChunkMesh[] = [];
   private readonly idleWaiters: Array<() => void> = [];
@@ -20,14 +26,25 @@ export class TerrainClient {
   generated = 0;
   generateMs = 0;
 
-  constructor(seed: number) {
-    this.worker = new Worker(new URL('./terrain.worker.ts', import.meta.url), { type: 'module' });
-    this.worker.onmessage = (e: MessageEvent<FromWorker>) => this.onMessage(e.data);
-    this.send({ type: 'seed', seed: seed >>> 0 });
+  constructor(seed: number, workers: number = workerCount()) {
+    workers = Math.max(1, Math.min(4, Math.floor(workers || workerCount())));
+    for (let i = 0; i < workers; i++) {
+      const w = new Worker(new URL('./terrain.worker.ts', import.meta.url), { type: 'module' });
+      w.onmessage = (e: MessageEvent<FromWorker>) => this.onMessage(e.data);
+      this.workers.push(w);
+    }
+    this.broadcast({ type: 'seed', seed: seed >>> 0 });
   }
 
-  private send(msg: ToWorker): void {
-    this.worker.postMessage(msg);
+  private broadcast(msg: ToWorker): void {
+    for (const w of this.workers) w.postMessage(msg);
+  }
+
+  /** Slab cz goes to worker cz mod n (negative slabs wrap correctly). */
+  private sendBuild(cz: number): void {
+    const n = this.workers.length;
+    const i = ((cz % n) + n) % n;
+    this.workers[i]!.postMessage({ type: 'build', cz } satisfies ToWorker);
   }
 
   private onMessage(msg: FromWorker): void {
@@ -52,8 +69,8 @@ export class TerrainClient {
   /** Tells the planner where the plane is; returns the slab below which meshes should be evicted. */
   setSlab(s: number): number {
     const plan = this.ring.setSlab(s);
-    if (plan.cancelBelow !== null) this.send({ type: 'cancelBelow', cz: plan.cancelBelow });
-    for (const cz of plan.request) this.send({ type: 'build', cz });
+    if (plan.cancelBelow !== null) this.broadcast({ type: 'cancelBelow', cz: plan.cancelBelow });
+    for (const cz of plan.request) this.sendBuild(cz);
     this.evictBelowCz = plan.evictBelow;
     for (let i = this.ready.length - 1; i >= 0; i--)
       if (this.ready[i]!.cz < plan.evictBelow) this.ready.splice(i, 1);
@@ -81,6 +98,10 @@ export class TerrainClient {
   }
 
   dispose(): void {
-    this.worker.terminate();
+    for (const w of this.workers) w.terminate();
+  }
+
+  get workerTotal(): number {
+    return this.workers.length;
   }
 }

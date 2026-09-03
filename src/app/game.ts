@@ -25,6 +25,8 @@ export interface GameOptions {
   preserveDrawingBuffer?: boolean;
   /** Sim only, no WebGL (cross-engine tests). */
   nogl?: boolean;
+  /** Terrain worker count override (benchmarks). */
+  workers?: number;
 }
 
 export type InputSource = (s: SimState) => InputFrame;
@@ -68,7 +70,7 @@ export class Game {
     this.scratch = new StepScratch(opts.seed);
     this.source = createPilot(opts.seed);
     this.recorder = new Recorder(opts.seed);
-    this.world = new World(opts.seed, this.renderer);
+    this.world = new World(opts.seed, this.renderer, opts.workers);
     this.world.update(this.state.z);
   }
 

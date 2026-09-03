@@ -12,10 +12,13 @@ export class World {
   private readonly renderer: GameRenderer;
   private terrain: TerrainClient;
 
-  constructor(seed: number, renderer: GameRenderer) {
+  private readonly workers: number | undefined;
+
+  constructor(seed: number, renderer: GameRenderer, workers?: number) {
     this.seed = seed;
     this.renderer = renderer;
-    this.terrain = new TerrainClient(seed);
+    this.workers = workers;
+    this.terrain = new TerrainClient(seed, workers);
   }
 
   /** Same seed keeps the chunk cache; a new seed replaces the worker and clears meshes. */
@@ -24,7 +27,7 @@ export class World {
     this.terrain.dispose();
     this.renderer.evictBelow(Infinity);
     this.seed = seed;
-    this.terrain = new TerrainClient(seed);
+    this.terrain = new TerrainClient(seed, this.workers);
   }
 
   /** Real-time update: plan for z, upload a few chunks, evict behind. */

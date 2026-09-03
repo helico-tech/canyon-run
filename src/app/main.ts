@@ -24,6 +24,8 @@ const params = new URLSearchParams(window.location.search);
 const test = isTestMode();
 const debug = params.get('debug') === '1';
 const nogl = params.get('nogl') === '1';
+const workersParam = params.get('workers');
+const workers = workersParam ? Number(workersParam) : undefined;
 const storage = browserStorage();
 const seed =
   (params.get('seed') !== null ? parseSeed(params.get('seed')!) : null) ??
@@ -52,6 +54,7 @@ const game = new Game(canvas, {
   height,
   preserveDrawingBuffer: test,
   nogl,
+  workers,
 });
 const hud = createHud(root);
 let hudProbe = new HudProbe(seed);

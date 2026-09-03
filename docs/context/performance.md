@@ -33,3 +33,22 @@ Resident geometry for 640 u: ~184 k triangles, 8.4 MB of vertex data.
 At 170 u/s (2.65 slabs/s) the wide halls need ~1.0–1.1 s of worker time per
 second of flight: a single JS worker cannot keep the ring full there. See the
 issue filed for CR-0027 (second worker or wasm field).
+
+## Two terrain workers (2026-09-03, CR-0027)
+
+`TerrainClient` now runs two workers on machines with 4+ cores and deals slabs
+round-robin (`?workers=N` overrides). Wall time to keep the ring full while
+advancing 100 ticks (≈ 280 u, 4.4 slabs) through the hoodoo desert (seed 4),
+measured with `scratchpad/bench-workers.ts`:
+
+| z after 100 ticks | 1 worker | 2 workers |
+|---|---|---|
+| 2064 | 759 ms | 481 ms |
+| 2342 | 561 ms | 316 ms |
+| 2624 | 618 ms | 349 ms |
+| 2904 | 1114 ms | 676 ms |
+
+100 ticks are 1.67 s of flight, so generation now needs 20–40 % of wall time in
+the heaviest biome instead of 35–65 %; the ring no longer drains at top speed.
+Headless frame time at 640×360 stays 25–45 ms per frame on SwiftShader
+(validation-grade, not real-time; real GPUs are far faster).
