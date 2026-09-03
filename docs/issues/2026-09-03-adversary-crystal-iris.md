@@ -1,5 +1,5 @@
 ---
-status: triaged
+status: resolved
 priority: P3
 filed: 2026-09-03
 filed-by: agent
@@ -19,3 +19,5 @@ checks reachability, so the period must exceed the approach time.
 From the EPIC-10 research (`docs/research/2026-09-03-06-adversaries-design.md`).
 
 ## Resolution
+
+**Resolved 2026-09-03** in CR-0043, commit 871bbbb. MOTION_PULSE ring (archetype 7) in the spires; audit counts radius change.
