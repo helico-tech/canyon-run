@@ -1,7 +1,7 @@
 ---
 id: CR-0012
 epic: EPIC-05
-status: todo
+status: done
 ---
 # CR-0012 Game loop and input
 
@@ -16,3 +16,8 @@ status: todo
 - Playwright smoke: page loads, click starts, `keyboard.down('KeyW')` changes pitch in `__game.state()`.
 
 **Verification.** `pnpm check`, `pnpm test:e2e`, headless sheet in `docs/evidence/2026-09-03-CR-0012/`.
+
+**Delivered notes.** W pushes the nose down and S pulls up (push/pull stick
+convention); `?debug=1` installs the read-only test API on the real-time build
+so the Playwright smoke test can read state. Evidence in
+`docs/evidence/2026-09-03-CR-0012/`.

@@ -28,6 +28,7 @@ declare global {
     __game?: GameTestApi;
     __info?: { renderer: string; vendor: string; version: string; simVersion: string };
     __replay?: unknown;
+    __errors?: string[];
   }
 }
 
@@ -37,6 +38,9 @@ export function isTestMode(): boolean {
 }
 
 export function installTestApi(game: Game, canvas: HTMLCanvasElement, simVersion: string): void {
+  window.__errors = [];
+  window.addEventListener('error', (e) => window.__errors!.push(String(e.message)));
+  window.addEventListener('unhandledrejection', (e) => window.__errors!.push(String(e.reason)));
   window.__game = {
     ready: true,
     async step(n = 1) {

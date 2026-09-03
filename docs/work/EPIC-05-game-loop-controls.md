@@ -1,6 +1,6 @@
 ---
 id: EPIC-05
-status: todo
+status: in-progress
 ---
 # EPIC-05 Game loop, controls, HUD, run lifecycle
 
