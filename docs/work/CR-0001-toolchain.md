@@ -1,7 +1,7 @@
 ---
 id: CR-0001
 epic: EPIC-01
-status: todo
+status: done
 ---
 # CR-0001 Toolchain and quality gates
 

@@ -1,6 +1,6 @@
 ---
 id: EPIC-01
-status: todo
+status: in-progress
 ---
 # EPIC-01 Foundation
 
