@@ -27,3 +27,11 @@ frame and drops the backlog beyond that. The renderer interpolates between the
 previous and current sim state with `alpha = acc / tickMs` (position lerp,
 orientation nlerp). Test mode and the headless tools call the same `Game.step`
 path with scripted or replayed inputs.
+
+## Settings (CR-0041, ADR 0008)
+
+The start screen has a sensitivity slider (0.5–2×), an invert-Y toggle and a
+W/S-throttle toggle. All three are applied in the `InputSampler` before the
+sim sees integer counts: the sim, its constants and replays are unaffected.
+With W/S throttle on, W/S produce `THR_UP`/`THR_DOWN` and Shift/Ctrl produce
+the pitch bits. Settings persist in localStorage (`canyon.settings`).

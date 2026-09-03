@@ -89,7 +89,13 @@ if (test) {
 } else {
   if (debug) installTestApi(game, canvas, SIM_VERSION);
   const screens = createScreens(root);
-  const sampler = new InputSampler();
+  const settings = storage.settings();
+  const sampler = new InputSampler(settings);
+  screens.setSettings(settings);
+  screens.onSettings((s) => {
+    Object.assign(settings, s);
+    storage.setSettings(settings);
+  });
   game.setSource(() => sampler.take());
   if (hint) hint.hidden = true;
 

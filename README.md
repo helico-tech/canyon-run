@@ -48,6 +48,10 @@ hoodoo desert, floating archipelago, and a Death-Star-style trench run.
 | N | new canyon |
 | Esc | release the mouse |
 
+The start screen also has settings: mouse sensitivity (0.5–2×), invert Y and a
+W/S throttle map. They are applied before the sim sees input, so replays stay
+exact whatever the recorder's settings were.
+
 Score accrues every tick at a rate that grows with the square of your speed
 factor, doubles when you touch distance to rock and rises with a proximity
 streak. Events pay bonuses: CLOSE, SO CLOSE, THREADED, passing a biome GATE, and

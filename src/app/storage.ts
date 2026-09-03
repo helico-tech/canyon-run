@@ -20,6 +20,9 @@ export interface KeyValueStore {
   setItem(key: string, value: string): void;
 }
 
+import type { Settings } from './settings.ts';
+import { DEFAULT_SETTINGS, isSettings } from './settings.ts';
+
 const PREFIX = 'canyon.';
 
 function isFiniteNumber(v: unknown): v is number {
@@ -88,6 +91,14 @@ export class Storage {
 
   setLastSeed(seed: number): void {
     this.write('lastSeed', seed >>> 0);
+  }
+
+  settings(): Settings {
+    return this.read('settings', isSettings) ?? { ...DEFAULT_SETTINGS };
+  }
+
+  setSettings(s: Settings): void {
+    this.write('settings', s);
   }
 
   runs(): RunSummary[] {

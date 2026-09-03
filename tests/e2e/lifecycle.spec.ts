@@ -57,3 +57,25 @@ test('a test-API restart moves the HUD seed label and probe to the new world', a
     await server.close();
   }
 });
+
+test('settings on the start screen do not start a run and persist across a reload', async ({
+  page,
+}) => {
+  const server = await serveStatic(path.join(root, 'dist'));
+  try {
+    await page.goto(`${server.url}/?debug=1&seed=1`);
+    await page.waitForFunction(() => window.__game?.ready === true, undefined, { timeout: 60000 });
+    await expect(page.locator('.screen.start')).toBeVisible();
+    await page.locator('.screen.start .invert').check();
+    await page.locator('.screen.start .sens').fill('1.5');
+    await expect(page.locator('.screen.start')).toBeVisible();
+    expect(await page.evaluate(() => window.__game!.state().phase)).toBe('idle');
+    await page.reload();
+    await page.waitForFunction(() => window.__game?.ready === true, undefined, { timeout: 60000 });
+    await expect(page.locator('.screen.start .invert')).toBeChecked();
+    await expect(page.locator('.screen.start .sens')).toHaveValue('1.5');
+    await expect(page.locator('.screen.start .sensv')).toHaveText('1.5');
+  } finally {
+    await server.close();
+  }
+});

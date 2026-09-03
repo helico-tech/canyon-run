@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import { Storage } from './storage.ts';
+import { DEFAULT_SETTINGS } from './settings.ts';
 
 function memory(): {
   getItem(k: string): string | null;
@@ -67,4 +68,16 @@ test('treats stored values of the wrong shape as absent', () => {
     '[null, 1, {"seed":2,"score":3,"ticks":1,"distance":1,"topSpeed":1,"date":"d"}]',
   );
   expect(s.runs()).toHaveLength(1);
+});
+
+test('settings persist and wrong-shaped or out-of-range values fall back to the defaults', () => {
+  const mem = memory();
+  const s = new Storage(mem);
+  expect(s.settings()).toEqual(DEFAULT_SETTINGS);
+  s.setSettings({ sensitivity: 1.7, invertY: true, throttleWS: false });
+  expect(s.settings()).toEqual({ sensitivity: 1.7, invertY: true, throttleWS: false });
+  mem.map.set('canyon.settings', '{"sensitivity":9,"invertY":"yes"}');
+  expect(s.settings()).toEqual(DEFAULT_SETTINGS);
+  mem.map.set('canyon.settings', '[]');
+  expect(s.settings()).toEqual(DEFAULT_SETTINGS);
 });

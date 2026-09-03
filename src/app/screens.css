@@ -45,6 +45,28 @@
   font-size: 12px;
   text-transform: uppercase;
 }
+.screen .settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  justify-content: center;
+  margin: 6px 0 2px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+.screen .settings label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.screen .settings input[type='range'] {
+  width: 90px;
+  accent-color: #2ee6d6;
+}
+.screen .settings input[type='checkbox'] {
+  accent-color: #2ee6d6;
+}
 .screen input.seed {
   margin-left: 8px;
   width: 120px;
