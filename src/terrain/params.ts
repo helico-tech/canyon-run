@@ -20,6 +20,12 @@ export interface FieldParams {
   /** Wall profile: walls lean out by `lip` then curl in by `overhang` near the ceiling. */
   profileLip: number;
   profileOverhang: number;
+  /** 0 = slot cross-section, 1 = elliptic tube (caves). */
+  tubeness: number;
+  /** Anisotropic spikes hanging from the ceiling / rising from the floor (0 disables). */
+  stalactiteAmp: number;
+  stalagmiteAmp: number;
+  spikeLen: number;
   /** Detail. */
   warpAmp: number;
   warpLen: number;
@@ -48,6 +54,13 @@ export interface FieldParams {
   archProb: number;
   archRMin: number;
   archRMax: number;
+  /** Carved side tunnels (dead ends) on z cells; probability 0 disables. */
+  tunnelSpacing: number;
+  tunnelProb: number;
+  tunnelRMin: number;
+  tunnelRMax: number;
+  tunnelLenMin: number;
+  tunnelLenMax: number;
 }
 
 export const CANYON: FieldParams = Object.freeze({
@@ -65,6 +78,10 @@ export const CANYON: FieldParams = Object.freeze({
   widthLen: 230,
   profileLip: 0.3,
   profileOverhang: 0.6,
+  tubeness: 0,
+  stalactiteAmp: 0,
+  stalagmiteAmp: 0,
+  spikeLen: 8,
   warpAmp: 10,
   warpLen: 45,
   warpOct: 2,
@@ -91,6 +108,12 @@ export const CANYON: FieldParams = Object.freeze({
   archProb: 0.3,
   archRMin: 5,
   archRMax: 9,
+  tunnelSpacing: 200,
+  tunnelProb: 0,
+  tunnelRMin: 8,
+  tunnelRMax: 12,
+  tunnelLenMin: 60,
+  tunnelLenMax: 120,
 });
 
 /** Bound on |full − base| from detail terms; the shell skip relies on it (research 03 §2.7). */

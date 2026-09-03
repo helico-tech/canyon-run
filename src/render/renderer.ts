@@ -88,9 +88,10 @@ export class Renderer implements GameRenderer {
     this.sun.color.setRGB(sr, sg, sb);
     this.sun.intensity = a.sunIntensity;
     this.sun.position.set(a.sunDir[0], a.sunDir[1], a.sunDir[2]);
-    const [zr, zg, zb] = rgbToFloat(a.zenith);
-    this.hemi.color.setRGB(hr * 0.6 + zr * 0.4, hg * 0.6 + zg * 0.4, hb * 0.6 + zb * 0.4);
-    this.hemi.groundColor.setRGB(0.55, 0.45, 0.3);
+    const [ar, ag, ab] = rgbToFloat(a.ambient);
+    this.hemi.color.setRGB(ar, ag, ab);
+    const [gr, gg, gb] = rgbToFloat(a.ground);
+    this.hemi.groundColor.setRGB(gr, gg, gb);
     this.hemi.intensity = a.hemiIntensity;
   }
 

@@ -10,6 +10,9 @@ export interface BiomeAtmosphere {
   fogDensity: number;
   sunIntensity: number;
   hemiIntensity: number;
+  /** Hemisphere light sky and ground colours (explicit: caves have dark skies but need light). */
+  ambient: Rgb;
+  ground: Rgb;
 }
 
 export interface BiomeDef {
@@ -20,15 +23,21 @@ export interface BiomeDef {
   atmosphere: BiomeAtmosphere;
 }
 
-export const CANYON_BIOME: BiomeDef = Object.freeze({
+export const CANYON_BIOME: BiomeDef = Object.freeze<BiomeDef>({
   id: 0,
   name: 'canyon',
   params: CANYON,
   palette: CANYON_PALETTE,
-  atmosphere: { fogDensity: 0.0038, sunIntensity: 2.2, hemiIntensity: 0.9 },
+  atmosphere: {
+    fogDensity: 0.0038,
+    sunIntensity: 2.2,
+    hemiIntensity: 0.9,
+    ambient: [171, 103.2, 86.4],
+    ground: [140.25, 114.75, 76.5],
+  },
 });
 
-/** Special biomes in delivery order; empty until CR-0017+ register them. */
+/** Special biomes in delivery order (registered at the bottom of this file to avoid cycles). */
 export const SPECIALS: BiomeDef[] = [];
 
 export const SEGMENT_HUB = 1200;
@@ -129,5 +138,11 @@ export function atmosphereAt(
     fogDensity: lerp(aa.fogDensity, ab.fogDensity, t),
     sunIntensity: lerp(aa.sunIntensity, ab.sunIntensity, t),
     hemiIntensity: lerp(aa.hemiIntensity, ab.hemiIntensity, t),
+    ambient: mixRgb(aa.ambient, ab.ambient, t),
+    ground: mixRgb(aa.ground, ab.ground, t),
   };
 }
+
+// Registration (biome files import only types from here, so this is not a cycle at runtime).
+import { CAVE_BIOME } from './biomes/cave.ts';
+SPECIALS.push(CAVE_BIOME);

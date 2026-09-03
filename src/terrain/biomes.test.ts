@@ -20,12 +20,24 @@ const TEST_SPECIAL: BiomeDef = {
   name: 'test-tube',
   params: { ...CANYON, halfWidth: 28, height: 60, coreRadius: 10, pillarSpacing: 40, ridgeLen: 18 },
   palette: { ...CANYON_PALETTE, horizon: [10, 20, 30] },
-  atmosphere: { fogDensity: 0.01, sunIntensity: 1, hemiIntensity: 0.5 },
+  atmosphere: {
+    fogDensity: 0.01,
+    sunIntensity: 1,
+    hemiIntensity: 0.5,
+    ambient: [0, 0, 0],
+    ground: [0, 0, 0],
+  },
 };
 
+const REGISTERED = SPECIALS.slice();
 afterEach(() => {
   SPECIALS.length = 0;
+  SPECIALS.push(...REGISTERED);
 });
+function onlyTestSpecial(): void {
+  SPECIALS.length = 0;
+  SPECIALS.push(TEST_SPECIAL);
+}
 
 test('segments alternate hub (1200 u) and special (2400 u)', () => {
   expect(segmentAt(-50).index).toBe(0);
@@ -39,6 +51,7 @@ test('segments alternate hub (1200 u) and special (2400 u)', () => {
 });
 
 test('with no specials everything is canyon and blends are identity', () => {
+  SPECIALS.length = 0;
   for (const z of [0, 1100, 1200, 1300, 3600, 9999]) {
     const b = blendAt(1, z);
     expect(b.a).toBe(CANYON_BIOME);
@@ -55,7 +68,7 @@ test('mixParams(a, a, t) reproduces a bit for bit', () => {
 });
 
 test('blend t rises smoothly across a boundary and specials are chosen by hash', () => {
-  SPECIALS.push(TEST_SPECIAL);
+  onlyTestSpecial();
   const before = blendAt(1, SEGMENT_HUB - BLEND_LENGTH);
   expect(before.a).toBe(CANYON_BIOME);
   expect(before.t).toBe(0);
@@ -77,7 +90,7 @@ test('blend t rises smoothly across a boundary and specials are chosen by hash',
 });
 
 test('the core stays air and the roof rock through a blend', () => {
-  SPECIALS.push(TEST_SPECIAL);
+  onlyTestSpecial();
   for (let z = SEGMENT_HUB - 300; z <= SEGMENT_HUB + SEGMENT_SPECIAL + 300; z += 37) {
     const sp = spineAt(2, z);
     expect(density(2, sp.cx, sp.coreY, z)).toBeLessThan(0);
@@ -86,9 +99,27 @@ test('the core stays air and the roof rock through a blend', () => {
 });
 
 test('atmosphere lerps palettes and fog', () => {
-  SPECIALS.push(TEST_SPECIAL);
+  onlyTestSpecial();
   const a = atmosphereAt(1, SEGMENT_HUB);
   expect(a.horizon[0]).toBeCloseTo((255 + 10) / 2, 6);
   expect(a.fogDensity).toBeCloseTo((0.0038 + 0.01) / 2, 6);
   expect(atmosphereAt(1, 0).fogDensity).toBe(0.0038);
+});
+
+test('every registered special keeps the core air and the roof rock across its segment and blends', () => {
+  expect(REGISTERED.length).toBeGreaterThan(0);
+  for (const special of REGISTERED) {
+    SPECIALS.length = 0;
+    SPECIALS.push(special);
+    for (const seed of [1, 2]) {
+      for (let z = SEGMENT_HUB - 300; z <= SEGMENT_HUB + SEGMENT_SPECIAL + 300; z += 41) {
+        const sp = spineAt(seed, z);
+        expect(density(seed, sp.cx, sp.coreY, z), `${special.name} core at z=${z}`).toBeLessThan(0);
+        expect(
+          density(seed, sp.cx, sp.ceilY + 24, z),
+          `${special.name} roof at z=${z}`,
+        ).toBeGreaterThan(0);
+      }
+    }
+  }
 });

@@ -32,3 +32,10 @@ intensities lerp per frame from the plane's z.
 All biomes share the spine wander values in `FieldParams` (`wander*`,
 `floorWander*`, `width*`) so the corridor centreline is continuous; halfWidth,
 height, coreYFrac, detail amplitudes and feature settings are per biome.
+
+## Registered biomes
+
+| # | Name | Corridor | Field extras | Features | Look |
+|---|---|---|---|---|---|
+| 0 | Canyon (hub) | slot, W 40, H 110, overhang lip | warp 10, ridges 7 @ 28 (vertical flutes) | pillars, boulders, arches | warm strata, orange haze |
+| 1 | Cave | elliptic tube, W 30, H 62 (`tubeness 1`) | stalactites 9, stalagmites 6 (`spikeLen 8`), ridges 5 @ 18 | columns (0.5 @ 40 u), boulders, dead-end side tunnels (0.4 per 200 u) | blue rock, cyan bands, dense blue fog, cool light |

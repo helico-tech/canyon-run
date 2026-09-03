@@ -1,9 +1,10 @@
 import { expect, test } from 'vitest';
 import { FEATURE_CLAMP, featuresSD, gatherFeatures } from './features.ts';
-import { baseDensity, density, FieldSampler } from './field.ts';
+import { baseDensity, density, FieldSampler, spineAt } from './field.ts';
 import { sfc32NextUnit, sfc32Seed } from '../sim/prng.ts';
 import { CANYON, shellBound } from './params.ts';
 import { spine } from './spine.ts';
+import { segmentAt } from './biomes.ts';
 
 const rng = sfc32Seed(2026);
 const rand = (lo: number, hi: number): number => lo + (hi - lo) * sfc32NextUnit(rng);
@@ -12,11 +13,15 @@ test('the core tube is always air and the roof is always rock', () => {
   for (let i = 0; i < 2000; i++) {
     const seed = (sfc32NextUnit(rng) * 4294967296) >>> 0;
     const z = rand(-5000, 50000);
-    const sp = spine(seed, z, CANYON);
+    const sp = spineAt(seed, z);
     expect(density(seed, sp.cx, sp.coreY, z)).toBeLessThan(0);
     expect(density(seed, sp.cx, sp.ceilY + 20, z)).toBeGreaterThan(0);
     expect(density(seed, sp.cx, sp.floorY - 20, z)).toBeGreaterThan(0);
-    expect(density(seed, sp.cx + sp.hw + 40, sp.coreY, z)).toBeGreaterThan(0);
+    // Side rock only in hub segments away from blends: special biomes may carve side tunnels.
+    const seg = segmentAt(z);
+    if (seg.index % 2 === 0 && z > seg.start + 200 && z < seg.end - 200) {
+      expect(density(seed, sp.cx + sp.hw + 40, sp.coreY, z)).toBeGreaterThan(0);
+    }
   }
 });
 
@@ -50,7 +55,7 @@ test('detail never lowers the field below base minus the shell bound', () => {
   const seed = 99;
   const bound = shellBound(CANYON);
   for (let i = 0; i < 3000; i++) {
-    const z = rand(0, 4000);
+    const z = rand(0, 1000); // hub segment: the bound is a property of one biome's field
     const sp = spine(seed, z, CANYON);
     const x = sp.cx + rand(-1.6, 1.6) * sp.hw;
     const y = sp.floorY + rand(-20, CANYON.height + 20);

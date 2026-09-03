@@ -1,7 +1,7 @@
 ---
 id: CR-0017
 epic: EPIC-06
-status: todo
+status: done
 ---
 # CR-0017 Biome: cave
 
@@ -16,3 +16,10 @@ status: todo
 - Existing goldens still pass (canyon segments unchanged).
 
 **Verification.** `pnpm check`, headless sheet, goldens.
+
+**Delivered notes.** Added field capabilities that are inert at zero for the
+canyon: `tubeness` (elliptic cross-section), `stalactiteAmp`/`stalagmiteAmp`
+spikes, and carved side tunnels (`FEATURE_TUNNEL`). Hemisphere light colours
+are now explicit per biome (`ambient`, `ground`) because deriving them from a
+near-black cave sky left no light. Goldens regenerated (segment 1 is now a
+cave); canyon frame hashes unchanged. Evidence in `docs/evidence/2026-09-03-CR-0017/`.

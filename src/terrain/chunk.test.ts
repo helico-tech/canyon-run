@@ -108,3 +108,17 @@ test('fillGrid marks the guaranteed core as air at the chunk containing the spin
   for (const v of scratch.grid) if (v < 0) air++;
   expect(air).toBeGreaterThan(1000);
 });
+
+test('a special-biome slab stays inside the triangle budget', () => {
+  const seed = 1;
+  let total = 0;
+  for (let cz = 30; cz < 34; cz++) {
+    for (const [cx, cy] of slabCandidates(seed, cz)) {
+      const m = buildChunk(seed, cx, cy, cz, scratch);
+      if (!m) continue;
+      total += m.tris;
+      expect(m.tris).toBeLessThanOrEqual(MAX_TRIS_PER_CHUNK);
+    }
+  }
+  expect(total).toBeGreaterThan(5000);
+});

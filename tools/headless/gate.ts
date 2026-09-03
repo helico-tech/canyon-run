@@ -34,11 +34,11 @@ export function runGates(g: GateInput): GateResult[] {
   for (const { frame, stats: s } of g.stats) {
     const tag = `frame ${frame}`;
     maxFog = Math.max(maxFog, s.fogFraction);
-    add(`${tag}: not fogged out`, s.fogFraction < 0.7, `fog fraction ${s.fogFraction}`);
+    // Structure in the bottom quarter: fogged dark floors can match the fog colour, edges cannot.
     add(
       `${tag}: terrain in bottom band`,
-      s.fogFractionBottom < 0.5,
-      `bottom fog fraction ${s.fogFractionBottom}`,
+      s.bottomEdgePct > 0.3,
+      `bottom edge density ${s.bottomEdgePct} %`,
     );
     // A single-biome palette quantises to ~80-120 colours at 4 bits; a flat or black frame to a handful.
     add(

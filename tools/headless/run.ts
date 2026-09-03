@@ -27,6 +27,8 @@ export interface RunOptions {
   height: number;
   out: string;
   dist?: string;
+  /** Ticks to simulate before the first rendered frame (fast: no per-tick render). */
+  skip?: number;
 }
 
 export interface RunResult {
@@ -71,8 +73,14 @@ export async function runHeadless(o: RunOptions): Promise<RunResult> {
       (r) => window.__game!.loadReplay(r),
       o.replay as unknown as Record<string, unknown>,
     );
+  if (o.skip) await page.evaluate((n) => window.__game!.step(n), o.skip);
   const frames: FrameRecord[] = [];
-  const pngs: Array<{ file: string; label: string; frame: number }> = [];
+  const pngs: Array<{
+    file: string;
+    label: string;
+    frame: number;
+    fog: { r: number; g: number; b: number };
+  }> = [];
   const lines: string[] = [];
   for (let f = 0; f < o.frames; f++) {
     const snap = await page.evaluate(() => window.__game!.step(1));
@@ -100,15 +108,25 @@ export async function runHeadless(o: RunOptions): Promise<RunResult> {
       // Page screenshot: canvas plus the HUD overlay (what the player sees).
       const file = path.join(o.out, `frame-${String(f).padStart(4, '0')}.png`);
       await page.screenshot({ path: file });
-      pngs.push({ file, label: `f${f} t${rec.tick} z${Math.round(Number(snap.z))}`, frame: f });
+      const atm = await page.evaluate(() => window.__game!.atmosphere());
+      const fog = {
+        r: Math.round(atm.horizon[0]),
+        g: Math.round(atm.horizon[1]),
+        b: Math.round(atm.horizon[2]),
+      };
+      pngs.push({
+        file,
+        label: `f${f} t${rec.tick} z${Math.round(Number(snap.z))}`,
+        frame: f,
+        fog,
+      });
     }
   }
   const chunkStats = await page.evaluate(() => window.__game!.chunkStats());
   await browser.close();
   server.close();
   fs.writeFileSync(path.join(o.out, 'frames.jsonl'), lines.join('\n') + '\n');
-  const fog = { r: 255, g: 154, b: 92 };
-  const stats = pngs.map((p) => ({ frame: p.frame, stats: frameStats(readPng(p.file), fog) }));
+  const stats = pngs.map((p) => ({ frame: p.frame, stats: frameStats(readPng(p.file), p.fog) }));
   fs.writeFileSync(
     path.join(o.out, 'stats.json'),
     JSON.stringify({ info, chunkStats, stats }, null, 1),
@@ -117,11 +135,14 @@ export async function runHeadless(o: RunOptions): Promise<RunResult> {
   // Node re-simulation for the checksum gate.
   let nodeChecksum: string;
   if (o.replay) {
-    const v = simulateReplay({ ...o.replay, ticks: Math.min(o.frames, o.replay.ticks) });
+    const v = simulateReplay({
+      ...o.replay,
+      ticks: Math.min((o.skip ?? 0) + o.frames, o.replay.ticks),
+    });
     if (v.verdict === 'ok') nodeChecksum = v.checksum;
     else nodeChecksum = `node:${v.verdict}`;
   } else {
-    const { state } = recordRun(seed, o.frames, createPilot(seed));
+    const { state } = recordRun(seed, (o.skip ?? 0) + o.frames, createPilot(seed));
     nodeChecksum = hex32(checksum(state));
   }
   const hudAnchor = readPng(pngs[pngs.length - 1]!.file);
@@ -168,6 +189,7 @@ if (import.meta.main) {
     width: Number(f.width ?? 640),
     height: Number(f.height ?? 360),
     out: f.out ?? 'runs/latest',
+    skip: Number(f.skip ?? 0),
   });
   for (const g of result.gates)
     if (!g.ok || f.verbose) console.log(`${g.ok ? 'ok  ' : 'FAIL'} ${g.name}: ${g.detail}`);

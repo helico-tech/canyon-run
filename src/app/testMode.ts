@@ -1,5 +1,6 @@
 // Headless/test API (ADR 0003). Installed only when ?test=1 or window.__replay exists.
 import type { InputFrame } from '../sim/input.ts';
+import { atmosphereAtZ } from '../render/atmosphere.ts';
 import type { Game } from './game.ts';
 
 export interface GameTestApi {
@@ -15,6 +16,8 @@ export interface GameTestApi {
   frameHash(): string;
   readPixel(x: number, y: number): [number, number, number, number];
   dataURL(): string;
+  /** Fog / horizon colour in force at the plane's z. */
+  atmosphere(): { horizon: [number, number, number]; fogDensity: number };
   chunkStats(): {
     resident: number;
     generated: number;
@@ -67,6 +70,10 @@ export function installTestApi(game: Game, canvas: HTMLCanvasElement, simVersion
     readPixel: (x, y) => game.renderer.readPixel(x, y),
     dataURL: () => canvas.toDataURL('image/png'),
     chunkStats: () => game.world.stats(),
+    atmosphere: () => {
+      const a = atmosphereAtZ(game.state.seed, game.state.z);
+      return { horizon: [a.horizon[0], a.horizon[1], a.horizon[2]], fogDensity: a.fogDensity };
+    },
     render: () => game.render(),
   };
   window.__info = { ...game.renderer.info, simVersion };

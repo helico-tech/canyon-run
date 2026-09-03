@@ -12,6 +12,8 @@ export interface Atmosphere {
   fogDensity: number;
   /** Sun direction (unit): 35° elevation, 60° off the flight axis. */
   sunDir: readonly [number, number, number];
+  ambient: Rgb;
+  ground: Rgb;
 }
 
 export function atmosphereFor(p: BiomePalette): Atmosphere {
@@ -23,6 +25,8 @@ export function atmosphereFor(p: BiomePalette): Atmosphere {
     hemiIntensity: 0.9,
     fogDensity: 0.0038,
     sunDir: [0.4965, 0.5736, 0.6516],
+    ambient: [171, 103.2, 86.4],
+    ground: [140.25, 114.75, 76.5],
   };
 }
 
@@ -43,5 +47,7 @@ export function atmosphereAtZ(seed: number, z: number): Atmosphere {
     hemiIntensity: a.hemiIntensity,
     fogDensity: a.fogDensity,
     sunDir: SUN_DIR,
+    ambient: a.ambient,
+    ground: a.ground,
   };
 }

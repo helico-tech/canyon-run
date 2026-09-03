@@ -13,6 +13,8 @@ export interface FrameStats {
   meanLum: number;
   uniqueColours16: number;
   edgeDensityPct: number;
+  /** Edge density inside the bottom quarter: structure means terrain is drawn there. */
+  bottomEdgePct: number;
   /** Fraction of pixels close to the fog colour, whole frame and top/bottom bands. */
   fogFraction: number;
   fogFractionTop: number;
@@ -41,6 +43,7 @@ export function frameStats(
   const quant = new Map<number, number>();
   let lsum = 0;
   let edges = 0;
+  let bottomEdges = 0;
   let fogAll = 0;
   let fogTop = 0;
   let fogBottom = 0;
@@ -60,7 +63,10 @@ export function frameStats(
         const [r2, g2, b2] = px(x + 1, y);
         const [r3, g3, b3] = px(x, y + 1);
         const l = lum(r, g, b);
-        if (Math.abs(l - lum(r2, g2, b2)) > 24 || Math.abs(l - lum(r3, g3, b3)) > 24) edges++;
+        if (Math.abs(l - lum(r2, g2, b2)) > 24 || Math.abs(l - lum(r3, g3, b3)) > 24) {
+          edges++;
+          if (y >= H - band) bottomEdges++;
+        }
       }
     }
   }
@@ -95,6 +101,7 @@ export function frameStats(
     meanLum: +(lsum / (W * H)).toFixed(1),
     uniqueColours16: quant.size,
     edgeDensityPct: +((100 * edges) / (W * H)).toFixed(2),
+    bottomEdgePct: +((100 * bottomEdges) / (W * band)).toFixed(2),
     fogFraction: +(fogAll / (W * H)).toFixed(4),
     fogFractionTop: +(fogTop / (W * band)).toFixed(4),
     fogFractionBottom: +(fogBottom / (W * band)).toFixed(4),

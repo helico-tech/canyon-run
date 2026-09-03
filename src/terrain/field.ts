@@ -4,7 +4,7 @@
 import type { Blend } from './biomes.ts';
 import { blendAt, createBlend } from './biomes.ts';
 import type { Feature } from './features.ts';
-import { featuresSD, gatherFeatures } from './features.ts';
+import { featuresSD, gatherFeatures, tunnelsSD } from './features.ts';
 import { fbm2, fbm3, lerp, noise3, ridged3, smax, smoothstep } from './noise.ts';
 import type { FieldParams } from './params.ts';
 import type { Spine } from './spine.ts';
@@ -14,13 +14,23 @@ function profile(p: FieldParams, h: number): number {
   return 1 + p.profileLip * smoothstep(0, 1, h) - p.profileOverhang * smoothstep(0.7, 1, h);
 }
 
+/** Elliptic tube cross-section (caves): distance-like, negative inside. */
+function tubeDistance(p: FieldParams, sp: Spine, x: number, y: number): number {
+  const hh = p.height * 0.5;
+  const ex = (x - sp.cx) / sp.hw;
+  const ey = (y - (sp.floorY + hh)) / hh;
+  const r = Math.sqrt(ex * ex + ey * ey);
+  return (r - 1) * (sp.hw < hh ? sp.hw : hh);
+}
+
 /** Cheap corridor-only field (~15 ns). Drives the shell skip and chunk pre-tests. */
 export function baseDensity(p: FieldParams, sp: Spine, x: number, y: number): number {
   const h = (y - sp.floorY) / p.height;
   const sdWall = Math.abs(x - sp.cx) - sp.hw * profile(p, h);
   const sdFloor = sp.floorY - y;
   const sdCeil = y - sp.ceilY;
-  return Math.max(sdWall, sdFloor, sdCeil);
+  const slot = Math.max(sdWall, sdFloor, sdCeil);
+  return p.tubeness > 0 ? lerp(slot, tubeDistance(p, sp, x, y), p.tubeness) : slot;
 }
 
 export function coreDistance(p: FieldParams, sp: Spine, x: number, y: number): number {
@@ -50,13 +60,27 @@ export function biomeDensity(
     p.ridgeAmp;
   const sdWall = Math.abs(px - sp.cx) - sp.hw * profile(p, h) + ridge;
   const ff = 1 / p.floorNoiseLen;
-  const sdFloor = sp.floorY - py + p.floorNoiseAmp * fbm2(px * ff, z * ff, seed ^ 14, p.heightOct);
+  let sdFloor = sp.floorY - py + p.floorNoiseAmp * fbm2(px * ff, z * ff, seed ^ 14, p.heightOct);
   const cf = 1 / p.ceilNoiseLen;
-  const sdCeil = py - sp.ceilY + p.ceilNoiseAmp * fbm2(px * cf, z * cf, seed ^ 15, p.heightOct);
+  let sdCeil = py - sp.ceilY + p.ceilNoiseAmp * fbm2(px * cf, z * cf, seed ^ 15, p.heightOct);
+  if (p.stalactiteAmp > 0 || p.stalagmiteAmp > 0) {
+    // Sharp spikes: a ridged field cubed, sampled in the horizontal plane only.
+    const sf = 1 / p.spikeLen;
+    const r = ridged3(px * sf, 0, z * sf, seed ^ 17, 2);
+    const spike = r * r * r;
+    sdCeil += p.stalactiteAmp * spike;
+    sdFloor += p.stalagmiteAmp * spike;
+  }
   let d = smax(smax(sdWall, sdFloor, p.smoothK), sdCeil, p.smoothK);
+  if (p.tubeness > 0) {
+    const tube = tubeDistance(p, sp, px, py) + ridge * 0.5;
+    d = lerp(d, smax(tube, sdFloor, p.smoothK), p.tubeness);
+  }
   const df = 1 / p.detailLen;
   d += p.detailAmp * noise3(x * df, y * df, z * df, seed ^ 16);
-  return Math.max(d, -featuresSD(seed, x, y, z, feats));
+  d = Math.max(d, -featuresSD(seed, x, y, z, feats));
+  if (p.tunnelProb > 0) d = Math.min(d, tunnelsSD(x, y, z, feats));
+  return d;
 }
 
 /** Full field with the guaranteed core tube, for a single biome. */
