@@ -1,5 +1,5 @@
 ---
-status: triaged
+status: resolved
 priority: P3
 filed: 2026-09-03
 filed-by: agent
@@ -17,3 +17,5 @@ path or make Game own the probe. Reported by the code-review sweep (angle C).
 
 
 ## Resolution
+
+**Resolved 2026-09-03** in CR-0038, commit 7c8e21a. Game.onWorldChange drives applySeed; e2e test added.
