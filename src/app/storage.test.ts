@@ -46,3 +46,25 @@ test('survives a missing or throwing store', () => {
   expect(throwing.lastSeed()).toBeNull();
   throwing.setLastSeed(1);
 });
+
+test('treats stored values of the wrong shape as absent', () => {
+  const mem = memory();
+  mem.map.set('canyon.runs', '{}');
+  mem.map.set('canyon.best', '"x"');
+  mem.map.set('canyon.best.1', '{"score":"high"}');
+  mem.map.set('canyon.lastSeed', '"abc"');
+  const s = new Storage(mem);
+  expect(s.runs()).toEqual([]);
+  expect(s.best()).toBeNull();
+  expect(s.bestForSeed(1)).toBeNull();
+  expect(s.lastSeed()).toBeNull();
+  const run = { seed: 1, score: 7, ticks: 1, distance: 1, topSpeed: 1, date: 'd' };
+  expect(s.recordRun(run)).toEqual({ newBest: true, newSeedBest: true });
+  expect(s.runs()).toEqual([run]);
+  expect(s.best()?.score).toBe(7);
+  mem.map.set(
+    'canyon.runs',
+    '[null, 1, {"seed":2,"score":3,"ticks":1,"distance":1,"topSpeed":1,"date":"d"}]',
+  );
+  expect(s.runs()).toHaveLength(1);
+});

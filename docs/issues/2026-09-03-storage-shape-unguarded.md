@@ -1,8 +1,9 @@
 ---
-status: open
+status: triaged
 priority: P2
 filed: 2026-09-03
 filed-by: agent
+work: CR-0036
 ---
 # Storage.read() does not validate shapes; a corrupt canyon.runs kills the render loop
 

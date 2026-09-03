@@ -22,16 +22,45 @@ export interface KeyValueStore {
 
 const PREFIX = 'canyon.';
 
+function isFiniteNumber(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null;
+}
+
+function isBest(v: unknown): v is BestRecord {
+  return (
+    isRecord(v) && isFiniteNumber(v.score) && isFiniteNumber(v.seed) && typeof v.date === 'string'
+  );
+}
+
+function isRun(v: unknown): v is RunSummary {
+  return (
+    isRecord(v) &&
+    isFiniteNumber(v.seed) &&
+    isFiniteNumber(v.score) &&
+    isFiniteNumber(v.ticks) &&
+    isFiniteNumber(v.distance) &&
+    isFiniteNumber(v.topSpeed) &&
+    typeof v.date === 'string'
+  );
+}
+
 export class Storage {
   private readonly store: KeyValueStore | null;
   constructor(store: KeyValueStore | null) {
     this.store = store;
   }
 
-  private read<T>(key: string): T | null {
+  /** Parses a stored value and returns it only when it has the expected shape. */
+  private read<T>(key: string, isT: (v: unknown) => v is T): T | null {
     try {
       const raw = this.store?.getItem(PREFIX + key);
-      return raw ? (JSON.parse(raw) as T) : null;
+      if (!raw) return null;
+      const parsed: unknown = JSON.parse(raw);
+      return isT(parsed) ? parsed : null;
     } catch {
       return null;
     }
@@ -46,15 +75,15 @@ export class Storage {
   }
 
   best(): BestRecord | null {
-    return this.read<BestRecord>('best');
+    return this.read('best', isBest);
   }
 
   bestForSeed(seed: number): BestRecord | null {
-    return this.read<BestRecord>(`best.${seed >>> 0}`);
+    return this.read(`best.${seed >>> 0}`, isBest);
   }
 
   lastSeed(): number | null {
-    return this.read<number>('lastSeed');
+    return this.read('lastSeed', isFiniteNumber);
   }
 
   setLastSeed(seed: number): void {
@@ -62,7 +91,7 @@ export class Storage {
   }
 
   runs(): RunSummary[] {
-    return this.read<RunSummary[]>('runs') ?? [];
+    return this.read('runs', Array.isArray)?.filter(isRun) ?? [];
   }
 
   /** Records a finished run; returns which bests it beat. */
