@@ -6,6 +6,7 @@ import { CANYON } from '../terrain/params.ts';
 import type { AdversaryParams } from '../terrain/params.ts';
 import {
   MOTION_CLOSE,
+  MOTION_PULSE,
   SHAPE_RING,
   advPoseAt,
   circle,
@@ -32,7 +33,7 @@ afterEach(() => {
 const ARENA: AdversaryParams = {
   spacing: 150,
   prob: 1,
-  archetypes: [0, 1, 2, 3, 4, 5, 6],
+  archetypes: [0, 1, 2, 3, 4, 5, 6, 7],
   rMin: 2,
   rMax: 4,
   lenMin: 6,
@@ -215,4 +216,35 @@ test('with every biome at prob 0 the tick cost and results are unchanged (no act
   const scratch = new StepScratch(1);
   for (let i = 0; i < 300; i++) step(s, ZERO_INPUT, scratch);
   expect(scratch.adversaries.count).toBe(0);
+});
+
+test('an iris breathes between its closed and open radius and always leaves the centre clear', () => {
+  arenaOnly();
+  const out = Array.from({ length: 96 }, createStation);
+  const pose = createPose();
+  let checked = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    const n = gatherStations(seed, 0, 0, 9000, out);
+    for (let i = 0; i < n; i++) {
+      const st = out[i]!;
+      if (st.motion !== MOTION_PULSE) continue;
+      const sp = spineAt(seed, st.z);
+      let lo = Infinity;
+      let hi = -Infinity;
+      for (let t = 0; t < st.period; t++) {
+        advPoseAt(st, t, st.z, pose);
+        if (pose.radius < lo) lo = pose.radius;
+        if (pose.radius > hi) hi = pose.radius;
+        expect(hullClearance(st, pose, sp.cx, sp.coreY, st.z)).toBeGreaterThanOrEqual(0);
+      }
+      // Integer ticks may miss the exact extremes of the swing (odd periods), never exceed them.
+      expect(lo).toBeGreaterThanOrEqual(st.len2 - 1e-9);
+      expect(lo - st.len2).toBeLessThan(0.05);
+      expect(hi).toBeLessThanOrEqual(st.len + 1e-9);
+      expect(st.len - hi).toBeLessThan(0.05);
+      if (st.seg < C.ADV_CORE_FROM) expect(st.len2 - st.r).toBeGreaterThanOrEqual(st.core + 2);
+      checked++;
+    }
+  }
+  expect(checked).toBeGreaterThan(3);
 });

@@ -81,17 +81,21 @@ export function auditStation(seed: number, mode: number, st: Station): StationVe
   const free: Uint8Array[] = [];
   let prevX = 0;
   let prevY = 0;
+  let prevR = 0;
   for (let t = 0; t < period; t++) {
     // CLOSE: the plane at closeDist*(1 - t/period) ... audit at the tightest gap (plane at the station).
     advPoseAt(st, t, st.z, pose);
     if (t > 0) {
+      // A ring edge that breathes moves as fast as its radius changes.
+      const dr = pose.radius - prevR;
       const step = Math.sqrt(
-        (pose.x - prevX) * (pose.x - prevX) + (pose.y - prevY) * (pose.y - prevY),
+        (pose.x - prevX) * (pose.x - prevX) + (pose.y - prevY) * (pose.y - prevY) + dr * dr,
       );
       if (step > verdict.maxStep) verdict.maxStep = step;
     }
     prevX = pose.x;
     prevY = pose.y;
+    prevR = pose.radius;
     const f = new Uint8Array(count);
     let freeCount = 0;
     for (let k = 0; k < count; k++) {

@@ -109,7 +109,7 @@ export class AdversaryLayer {
     this.p.set(x, y, st.z);
     const angle = Math.atan2(s, c);
     this.q.set(0, 0, Math.sin(angle / 2), Math.cos(angle / 2));
-    if (st.shape === SHAPE_RING) this.sc.set(st.len * scale, st.len * scale, 1);
+    if (st.shape === SHAPE_RING) this.sc.set(this.pose.radius * scale, this.pose.radius * scale, 1);
     else this.sc.set(st.len * scale, st.r * scale, st.hz);
     this.m.compose(this.p, this.q, this.sc);
     mesh.setMatrixAt(i, this.m);

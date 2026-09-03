@@ -33,6 +33,8 @@ export const MOTION_SWEEP_Y = 2;
 export const MOTION_BOUNCE_X = 3;
 export const MOTION_ORBIT = 4;
 export const MOTION_CLOSE = 5;
+/** Ring radius breathes between the closed opening `len2` and `len` (rings only). */
+export const MOTION_PULSE = 6;
 
 /** Archetype rows [shape, motion, spin turns per period]. Ids are stable: replays depend on them. */
 export const ARCHETYPES: ReadonlyArray<readonly [number, number, number]> = [
@@ -43,6 +45,7 @@ export const ARCHETYPES: ReadonlyArray<readonly [number, number, number]> = [
   [SHAPE_WEDGE, MOTION_ORBIT, 0], // 4 orbiting shard
   [SHAPE_BOX, MOTION_CLOSE, 0], // 5 closing jaws
   [SHAPE_BLADE, MOTION_SWEEP_X, 1], // 6 sweeping, spinning blade
+  [SHAPE_RING, MOTION_PULSE, 0], // 7 crystal iris
 ];
 
 export const ADV_MAX = 32;
@@ -60,6 +63,8 @@ export interface Station {
   ay: number;
   r: number;
   len: number;
+  /** Closed radius of a pulsing ring; its opening still fits the hull. */
+  len2: number;
   hz: number;
   period: number;
   phase: number;
@@ -84,6 +89,7 @@ export function createStation(): Station {
     ay: 0,
     r: 2,
     len: 4,
+    len2: 4,
     hz: 1.5,
     period: 60,
     phase: 0,
@@ -101,10 +107,12 @@ export interface AdvPose {
   c: number;
   s: number;
   gap: number;
+  /** Ring radius at this time (`len` unless the ring pulses). */
+  radius: number;
 }
 
 export function createPose(): AdvPose {
-  return { x: 0, y: 0, c: 1, s: 0, gap: 0 };
+  return { x: 0, y: 0, c: 1, s: 0, gap: 0, radius: 0 };
 }
 
 // ---- motion primitives ------------------------------------------------------
@@ -159,7 +167,10 @@ export function advPoseAt(st: Station, time: number, planeZ: number, out: AdvPos
   let x = st.cx;
   let y = st.cy;
   out.gap = 0;
-  if (st.motion === MOTION_SWEEP_X) x += st.ax * swing(u);
+  out.radius = st.len;
+  if (st.motion === MOTION_PULSE)
+    out.radius = st.len2 + (st.len - st.len2) * (0.5 + 0.5 * swing(u));
+  else if (st.motion === MOTION_SWEEP_X) x += st.ax * swing(u);
   else if (st.motion === MOTION_SWEEP_Y) y += st.ay * swing(u);
   else if (st.motion === MOTION_BOUNCE_X) x += st.ax * tri(u);
   else if (st.motion === MOTION_ORBIT) {
@@ -232,7 +243,7 @@ export function stationSD(st: Station, p: AdvPose, x: number, y: number, z: numb
   const by = -p.s * dx + p.c * dy;
   let d2: number;
   if (st.shape === SHAPE_RING) {
-    d2 = Math.abs(Math.sqrt(bx * bx + by * by) - st.len) - st.r;
+    d2 = Math.abs(Math.sqrt(bx * bx + by * by) - p.radius) - st.r;
   } else if (st.shape === SHAPE_WEDGE) {
     d2 = triangleSD(bx, by, st.len, 2 * st.r);
   } else {
@@ -325,10 +336,18 @@ export function decodeStation(
   let ay = halfY * p.ampY;
   const keepCore = seg < C.ADV_CORE_FROM;
   const need = core + body + 2;
+  let len2 = len;
   if (shape === SHAPE_RING) {
     // The hole must clear the core; before ADV_CORE_FROM the hoop cannot drift.
     if (len - r < core + 2) return false;
     if (keepCore) ax = 0;
+    if (motion === MOTION_PULSE) {
+      // An iris breathes in place: closed it still clears the core before
+      // ADV_CORE_FROM, and later still leaves the level hull an opening.
+      len2 = keepCore ? core + r + 2 : C.ADV_HULL_R + r + 1;
+      if (len - len2 < 4) return false;
+      ax = 0;
+    }
     // A drifting hoop's opening must still overlap the core by a full hull disc at
     // the end of its sweep: |offset| ≤ (opening − hull) + (core − hull) − 2.
     const reach = len - r - C.ADV_HULL_R + (core - C.ADV_HULL_R) - 2;
@@ -396,6 +415,7 @@ export function decodeStation(
   out.shape = shape;
   out.motion = motion;
   out.spin = arch[2];
+  out.len2 = len2;
   out.cx = cx;
   out.cy = cy;
   out.ax = ax;

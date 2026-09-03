@@ -1,8 +1,9 @@
 ---
-status: open
+status: triaged
 priority: P3
 filed: 2026-09-03
 filed-by: agent
+work: CR-0043
 ---
 # Adversary: crystal iris that blooms open across the spires core
 

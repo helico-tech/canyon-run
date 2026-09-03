@@ -68,7 +68,7 @@ export const SPIRES_BIOME: BiomeDef = Object.freeze<BiomeDef>({
   adversaries: {
     spacing: 260,
     prob: 0.8,
-    archetypes: [0, 3],
+    archetypes: [0, 7, 3],
     rMin: 2,
     rMax: 3,
     lenMin: 17,
