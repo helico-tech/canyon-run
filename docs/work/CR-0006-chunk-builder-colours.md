@@ -1,7 +1,7 @@
 ---
 id: CR-0006
 epic: EPIC-02
-status: todo
+status: done
 ---
 # CR-0006 Chunk builder with baked colours
 

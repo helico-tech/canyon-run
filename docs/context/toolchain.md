@@ -18,6 +18,12 @@ TypeScript, Vitest, ESLint + typescript-eslint, Prettier. Exact pins in
 `src/sim`, `src/terrain`, `src/cli` with `lib: ["ES2022"]` and no DOM so the
 deterministic core cannot reference `window`, `performance` or `document`.
 
+## Node runs TypeScript directly
+
+Scripts and tools run with `node file.ts` (type stripping, no build). That
+forbids non-erasable syntax: parameter properties, enums, namespaces.
+`erasableSyntaxOnly` in `tsconfig.json` makes `tsc` reject them everywhere.
+
 ## Lint gate for the deterministic core
 
 `eslint.config.js` bans, in `src/sim/**` and `src/terrain/**`: transcendental

@@ -135,12 +135,17 @@ export function featuresSD(seed: number, x: number, y: number, z: number, list: 
     if (dx > f.reach || dx < -f.reach || dz > f.reach || dz < -f.reach) continue;
     let sd: number;
     if (f.kind === FEATURE_PILLAR) {
+      // The bulge is within ±25 % of r; skip the noise when it cannot beat `best` (exact).
+      const d0 = Math.sqrt(dx * dx + dz * dz) - f.r;
+      if (d0 - 0.25 * f.r >= best) continue;
       const bulge = 1 + 0.25 * noise3(f.x * 0.05, y * 0.08, f.z * 0.05, seed ^ 0x5555);
-      sd = Math.sqrt(dx * dx + dz * dz) - f.r * bulge;
+      sd = d0 - f.r * (bulge - 1);
     } else if (f.kind === FEATURE_BOULDER) {
       const dy = y - f.y;
+      const d0 = Math.sqrt(dx * dx + dy * dy + dz * dz) - f.r;
+      if (d0 - 0.2 * f.r >= best) continue;
       const bulge = 1 + 0.2 * noise3(x * 0.15, y * 0.15, z * 0.15, seed ^ 0x6555);
-      sd = Math.sqrt(dx * dx + dy * dy + dz * dz) - f.r * bulge;
+      sd = d0 - f.r * (bulge - 1);
     } else {
       const dy = y - f.y;
       const ring = Math.sqrt(dx * dx + dy * dy) - f.big;

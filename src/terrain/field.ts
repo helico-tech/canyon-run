@@ -68,8 +68,11 @@ export class FieldSampler {
   private feats: Feature[] = [];
   private p: FieldParams = CANYON;
   private spineZ = Number.NaN;
+  private readonly seed: number;
 
-  constructor(private readonly seed: number) {}
+  constructor(seed: number) {
+    this.seed = seed;
+  }
 
   /** Prepares features for points inside the box; call before `density`. */
   prepare(x0: number, x1: number, z0: number, z1: number): void {
