@@ -1,5 +1,5 @@
 ---
-status: triaged
+status: resolved
 priority: P2
 filed: 2026-09-03
 filed-by: agent
@@ -18,3 +18,5 @@ Reported by the code-review sweep (angle B).
 
 
 ## Resolution
+
+**Resolved 2026-09-03** in CR-0035, commit 147e970. Latched gateSeg in the state; re-crossing pays nothing; test added.
