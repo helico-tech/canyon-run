@@ -1,7 +1,7 @@
 ---
 id: CR-0003
 epic: EPIC-02
-status: todo
+status: done
 ---
 # CR-0003 Deterministic noise, hashes and PRNG
 

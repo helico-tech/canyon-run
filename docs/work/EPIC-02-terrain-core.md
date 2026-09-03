@@ -1,6 +1,6 @@
 ---
 id: EPIC-02
-status: todo
+status: in-progress
 ---
 # EPIC-02 Terrain core
 
