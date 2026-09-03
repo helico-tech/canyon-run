@@ -6,8 +6,8 @@
 // the current forward vector onto it is projected onto the body axes for the
 // pitch and yaw commands, and the plane banks into the turn so pitch authority
 // is available for turning.
-import { CANYON } from '../terrain/params.ts';
-import { createSpine, spine } from '../terrain/spine.ts';
+import { spineAt } from '../terrain/field.ts';
+import { createSpine } from '../terrain/spine.ts';
 import { C } from './constants.ts';
 import type { InputFrame } from './input.ts';
 import { clampI16, KEY } from './input.ts';
@@ -59,13 +59,13 @@ export function createPilot(seed: number, opts: PilotOptions = {}): (s: SimState
     const fY = b[7]!;
     const fZ = b[8]!;
 
-    spine(s.seed, s.z - 20, CANYON, sp);
+    spineAt(s.seed, s.z - 20, sp);
     const cxBack = sp.cx;
     const cyBack = sp.coreY;
-    spine(s.seed, s.z + lookahead, CANYON, sp);
+    spineAt(s.seed, s.z + lookahead, sp);
     const slopeX = (sp.cx - cxBack) / (lookahead + 20);
     const slopeY = (sp.coreY - cyBack) / (lookahead + 20);
-    spine(s.seed, s.z, CANYON, sp);
+    spineAt(s.seed, s.z, sp);
     const ex = sp.cx - s.x;
     const ey = sp.coreY - s.y;
     let dX = slopeX + clamp(ex * kLat, -0.5, 0.5);

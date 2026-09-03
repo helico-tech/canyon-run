@@ -1,5 +1,4 @@
-import { CANYON } from '../terrain/params.ts';
-import { spine } from '../terrain/spine.ts';
+import { spineAt } from '../terrain/field.ts';
 import { C } from './constants.ts';
 import { hashF64sU32s } from './hash.ts';
 import { sfc32Seed } from './prng.ts';
@@ -32,7 +31,7 @@ export interface SimState {
 }
 
 export function createState(seed: number): SimState {
-  const sp = spine(seed >>> 0, 0, CANYON);
+  const sp = spineAt(seed >>> 0, 0);
   return {
     tick: 0,
     alive: 1,

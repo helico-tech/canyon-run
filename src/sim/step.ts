@@ -1,7 +1,7 @@
 // One fixed tick of the flight model (spec §5.3). Pure: reads only state, input
 // and constants; the only randomness is the sim's own PRNG.
-import { CANYON } from '../terrain/params.ts';
-import { spine, createSpine } from '../terrain/spine.ts';
+import { spineAt } from '../terrain/field.ts';
+import { createSpine } from '../terrain/spine.ts';
 import { CollisionScratch, hullHits, prepareTick, proximityAt } from './collision.ts';
 import { C } from './constants.ts';
 import type { InputFrame } from './input.ts';
@@ -63,7 +63,7 @@ export function step(
   if (cmdRoll === 0) cmdRoll = clamp(rightY * C.AUTO_LEVEL, -1, 1);
   cmdYaw = clamp(cmdYaw - rightY * C.BANK_YAW_GAIN, -1, 1);
 
-  const sp = spine(s.seed, s.z, CANYON, scratch.spine);
+  const sp = spineAt(s.seed, s.z, scratch.spine);
   const ceiling = sp.ceilY - C.CEIL_MARGIN;
   const softTop = ceiling - C.CEIL_SOFT;
   if (s.y > softTop)
@@ -109,7 +109,7 @@ export function step(
   s.y += b[7]! * s.speed * C.DT;
   s.z += b[8]! * s.speed * C.DT;
   // Clamp against the roof at the new z so the invariant holds at every tick end.
-  const ceilingNow = spine(s.seed, s.z, CANYON, scratch.spine).ceilY - C.CEIL_MARGIN;
+  const ceilingNow = spineAt(s.seed, s.z, scratch.spine).ceilY - C.CEIL_MARGIN;
   if (s.y > ceilingNow) s.y = ceilingNow;
 
   // Collision at the midpoint and the end of the tick's travel.

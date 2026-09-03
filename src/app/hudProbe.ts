@@ -1,8 +1,6 @@
 // Render-side proximity per side for the HUD edge glows. Samples the same field
 // the sim uses, but nothing here feeds back into the sim.
-import { FieldSampler } from '../terrain/field.ts';
-import { CANYON } from '../terrain/params.ts';
-import { spine } from '../terrain/spine.ts';
+import { FieldSampler, spineAt } from '../terrain/field.ts';
 import { C } from '../sim/constants.ts';
 import { basis } from '../sim/quat.ts';
 import type { SimState } from '../sim/state.ts';
@@ -19,7 +17,7 @@ export class HudProbe {
   }
 
   view(state: SimState, replayLabel: string | null): HudView {
-    const sp = spine(state.seed, state.z, CANYON);
+    const sp = spineAt(state.seed, state.z);
     const ceiling = sp.ceilY - C.CEIL_MARGIN;
     const altitude = (state.y - sp.floorY) / (ceiling - sp.floorY);
     const r = PROBE_DIST + 2;

@@ -41,6 +41,7 @@ export class Renderer implements GameRenderer {
   private readonly sun = new THREE.DirectionalLight(0xffffff, 2);
   private readonly hemi = new THREE.HemisphereLight(0xffffff, 0x808080, 1);
   private readonly fog = new THREE.FogExp2(0xff9a5c, 0.004);
+  private readonly background = new THREE.Color(0xff9a5c);
   private readonly material = createTerrainMaterial();
   private readonly chunks = new Map<string, THREE.Mesh>();
   private readonly pixel = new Uint8Array(4);
@@ -81,7 +82,8 @@ export class Renderer implements GameRenderer {
     const [hr, hg, hb] = rgbToFloat(a.horizon);
     this.fog.color.setRGB(hr, hg, hb);
     this.fog.density = a.fogDensity;
-    this.scene.background = new THREE.Color(hr, hg, hb);
+    this.background.setRGB(hr, hg, hb);
+    this.scene.background = this.background;
     const [sr, sg, sb] = rgbToFloat(a.sun);
     this.sun.color.setRGB(sr, sg, sb);
     this.sun.intensity = a.sunIntensity;

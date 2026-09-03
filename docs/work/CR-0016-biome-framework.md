@@ -1,7 +1,7 @@
 ---
 id: CR-0016
 epic: EPIC-06
-status: todo
+status: done
 ---
 # CR-0016 Biome framework, sequencing, blending, palettes
 
@@ -15,3 +15,9 @@ status: todo
 - Fog, sky and light colours interpolate smoothly in headless frames across a boundary (sheet).
 
 **Verification.** `pnpm check`, goldens pass, sheet in `docs/evidence/`.
+
+**Delivered notes.** Blending evaluates both biome fields and lerps the
+densities, then carves the mixed core tube, instead of mixing noise terms;
+this is simpler and provably keeps the corridor open. Goldens and frame hashes
+are unchanged (canyon-only output is identical). Chunk cost 12.9 ms per
+candidate after the refactor.

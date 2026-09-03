@@ -1,6 +1,6 @@
 ---
 id: EPIC-06
-status: todo
+status: in-progress
 ---
 # EPIC-06 Biomes and progression
 

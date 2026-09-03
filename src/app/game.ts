@@ -1,6 +1,6 @@
 // Game object: owns the sim state, the world ring and the renderer. Input comes
 // from a source: the player's sampler, the scripted pilot, or a replay.
-import { atmosphereFor } from '../render/atmosphere.ts';
+import { atmosphereFor, atmosphereAtZ } from '../render/atmosphere.ts';
 import type { RenderPose } from '../render/camera.ts';
 import { Renderer } from '../render/renderer.ts';
 import type { GameRenderer } from '../render/renderer.ts';
@@ -183,6 +183,7 @@ export class Game {
   }
 
   render(alpha = 1): void {
+    this.renderer.setAtmosphere(atmosphereAtZ(this.state.seed, this.state.z));
     this.renderer.render(this.pose(alpha));
     this.frames++;
     this.onRender?.(this.state, alpha);

@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { FEATURE_CLAMP, featuresSD, gatherFeatures } from './features.ts';
-import { baseDensity, density, FieldSampler, paramsAt } from './field.ts';
+import { baseDensity, density, FieldSampler } from './field.ts';
 import { sfc32NextUnit, sfc32Seed } from '../sim/prng.ts';
 import { CANYON, shellBound } from './params.ts';
 import { spine } from './spine.ts';
@@ -71,8 +71,4 @@ test('features are placed by hash and their distance is clamped', () => {
   expect(featuresSD(seed, 1e6, 0, 1e6, feats)).toBe(FEATURE_CLAMP);
   const pillar = feats.find((f) => f.kind === 0)!;
   expect(featuresSD(seed, pillar.x, 10, pillar.z, feats)).toBeLessThan(0);
-});
-
-test('paramsAt returns the canyon set for now', () => {
-  expect(paramsAt(1, 12345)).toBe(CANYON);
 });

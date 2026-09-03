@@ -1,0 +1,34 @@
+# Biomes
+
+Source: `src/terrain/biomes.ts`, `src/terrain/field.ts` (`FieldContext`),
+`src/render/atmosphere.ts`. Decision: ADR 0004 §6.
+
+## Sequencing
+
+```
+z:  0 ──── 1200 ──────────── 3600 ──── 4800 ──────────── 7200 ...
+    hub    special (by hash)  hub       special           hub
+```
+
+Even segments are always the canyon hub (1200 u); odd segments pick one of
+the registered `SPECIALS` with `hash1(segmentIndex, seed)`. Blend zones are
+320 u wide, centred on each boundary, with `t = smoothstep` from the earlier
+biome to the later one. With no specials registered every segment is canyon
+and blends are identities, so registering biomes never changes canyon output.
+
+## Blending
+
+`FieldContext.density` evaluates **both** biome fields at the point and lerps
+the densities, then carves the core tube of the **mixed** parameters
+(`mixParams` lerps every number). Frequencies therefore never slide; the
+corridor never closes because the mixed core is always air (tested across a
+synthetic blend). Features of both biomes exist in the zone and fade with the
+lerp. Colours look up both palettes and lerp; fog, sky, sun and light
+intensities lerp per frame from the plane's z.
+
+## Contract for a biome definition
+
+`BiomeDef = { id, name, params: FieldParams, palette: BiomePalette, atmosphere }`.
+All biomes share the spine wander values in `FieldParams` (`wander*`,
+`floorWander*`, `width*`) so the corridor centreline is continuous; halfWidth,
+height, coreYFrac, detail amplitudes and feature settings are per biome.

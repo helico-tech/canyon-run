@@ -1,9 +1,8 @@
 // Chunk builder: fills the sample grid with the shell skip, meshes it and bakes
 // colours. Output is a pure function of (seed, cx, cy, cz).
+import { blendAt } from './biomes.ts';
 import { faceColour } from './colour.ts';
-import type { Feature } from './features.ts';
-import { featuresSD, gatherFeatures } from './features.ts';
-import { baseDensity, coreDistance, fullDensity, paramsAt } from './field.ts';
+import { FieldContext } from './field.ts';
 import {
   CELL_SIZE,
   CHUNK_SIZE,
@@ -15,7 +14,6 @@ import {
 } from './march.ts';
 import type { MarchOutput } from './march.ts';
 import { hash3 } from './noise.ts';
-import { CANYON_PALETTE } from './palette.ts';
 import { shellBound } from './params.ts';
 import type { Spine } from './spine.ts';
 import { createSpine, spine } from './spine.ts';
@@ -33,9 +31,8 @@ export interface ChunkMesh {
 
 export interface ChunkScratch {
   grid: Float64Array;
-  spines: Spine[];
-  feats: Feature[];
-  zfeats: Feature[];
+  ctx: FieldContext | null;
+  ctxSeed: number;
   out: MarchOutput;
   rgba: Uint8Array;
   /** Statistics of the last fill: full evaluations and base-only samples. */
@@ -45,18 +42,23 @@ export interface ChunkScratch {
 
 export function createChunkScratch(): ChunkScratch {
   const out = createMarchOutput();
-  const spines: Spine[] = [];
-  for (let i = 0; i < SAMPLES; i++) spines.push(createSpine());
   return {
     grid: new Float64Array(GRID_LENGTH),
-    spines,
-    feats: [],
-    zfeats: [],
+    ctx: null,
+    ctxSeed: -1,
     out,
     rgba: new Uint8Array(out.capacity * 12),
     full: 0,
     baseOnly: 0,
   };
+}
+
+function contextFor(seed: number, s: ChunkScratch): FieldContext {
+  if (!s.ctx || s.ctxSeed !== seed) {
+    s.ctx = new FieldContext(seed);
+    s.ctxSeed = seed;
+  }
+  return s.ctx;
 }
 
 const CELL_DIAG = Math.sqrt(3) * CELL_SIZE;
@@ -66,35 +68,30 @@ export function fillGrid(seed: number, cx: number, cy: number, cz: number, s: Ch
   const ox = cx * CHUNK_SIZE;
   const oy = cy * CHUNK_SIZE;
   const oz = cz * CHUNK_SIZE;
-  const p = paramsAt(seed, oz + CHUNK_SIZE * 0.5);
-  const bound = shellBound(p) + CELL_DIAG;
-  for (let z = 0; z < SAMPLES; z++) spine(seed, oz + z * CELL_SIZE, p, s.spines[z]!);
-  s.feats = gatherFeatures(seed, p, ox, ox + CHUNK_SIZE, oz, oz + CHUNK_SIZE, s.feats);
+  const ctx = contextFor(seed, s);
+  ctx.setBox(ox, ox + CHUNK_SIZE, oz, oz + CHUNK_SIZE);
   const grid = s.grid;
-  const zfeats = s.zfeats;
   let full = 0;
   let baseOnly = 0;
   for (let z = 0; z < SAMPLES; z++) {
-    const sp = s.spines[z]!;
     const wz = oz + z * CELL_SIZE;
-    // Only features whose reach covers this z slice; the result is unchanged because
-    // featuresSD rejects the others by the same reach test.
-    zfeats.length = 0;
-    for (const f of s.feats) if (wz - f.z <= f.reach && f.z - wz <= f.reach) zfeats.push(f);
+    ctx.at(wz);
+    const { a, b, t } = ctx.blend;
+    const bound = Math.max(shellBound(a.params), t > 0 ? shellBound(b.params) : 0) + CELL_DIAG;
     for (let y = 0; y < SAMPLES; y++) {
       const wy = oy + y * CELL_SIZE;
       for (let x = 0; x < SAMPLES; x++) {
         const wx = ox + x * CELL_SIZE;
-        const b = baseDensity(p, sp, wx, wy);
+        const base = ctx.base(wx, wy);
         const i = gridIndex(x, y, z);
-        if (b > bound) {
-          grid[i] = Math.min(b, coreDistance(p, sp, wx, wy));
+        if (base > bound) {
+          grid[i] = Math.min(base, ctx.core(wx, wy));
           baseOnly++;
-        } else if (b < -bound) {
-          grid[i] = Math.max(b, -featuresSD(seed, wx, wy, wz, zfeats));
+        } else if (base < -bound) {
+          grid[i] = Math.max(base, ctx.featureRock(wx, wy, wz));
           baseOnly++;
         } else {
-          grid[i] = fullDensity(seed, p, sp, zfeats, wx, wy, wz);
+          grid[i] = ctx.density(wx, wy, wz);
           full++;
         }
       }
@@ -110,21 +107,25 @@ export function slabEnvelope(
   cz: number,
 ): { minX: number; maxX: number; minY: number; maxY: number } {
   const oz = cz * CHUNK_SIZE;
-  const p = paramsAt(seed, oz + CHUNK_SIZE * 0.5);
   const sp = createSpine();
   let minX = Infinity;
   let maxX = -Infinity;
   let minY = Infinity;
   let maxY = -Infinity;
+  let pad = 0;
   for (let z = 0; z <= SAMPLES - 1; z += 4) {
-    spine(seed, oz + z * CELL_SIZE, p, sp);
-    const reach = sp.hw * (1 + p.profileLip);
-    minX = Math.min(minX, sp.cx - reach);
-    maxX = Math.max(maxX, sp.cx + reach);
-    minY = Math.min(minY, sp.floorY);
-    maxY = Math.max(maxY, sp.ceilY);
+    const wz = oz + z * CELL_SIZE;
+    const bl = blendAt(seed, wz);
+    for (const p of bl.a === bl.b || bl.t === 0 ? [bl.a.params] : [bl.a.params, bl.b.params]) {
+      spine(seed, wz, p, sp);
+      const reach = sp.hw * (1 + p.profileLip);
+      minX = Math.min(minX, sp.cx - reach);
+      maxX = Math.max(maxX, sp.cx + reach);
+      minY = Math.min(minY, sp.floorY);
+      maxY = Math.max(maxY, sp.ceilY);
+      pad = Math.max(pad, shellBound(p) + 8);
+    }
   }
-  const pad = shellBound(p) + 8;
   return { minX: minX - pad, maxX: maxX + pad, minY: minY - pad, maxY: maxY + pad };
 }
 
@@ -165,12 +166,11 @@ export function buildChunk(
   const ox = cx * CHUNK_SIZE;
   const oy = cy * CHUNK_SIZE;
   const oz = cz * CHUNK_SIZE;
-  const p = paramsAt(seed, oz + CHUNK_SIZE * 0.5);
-  const pal = CANYON_PALETTE;
   const key = chunkKey(cx, cy, cz);
   const pos = s.out.pos;
   const rgba = s.rgba;
-  const sp = createSpine();
+  const sp: Spine = createSpine();
+  const ctx = contextFor(seed, s);
   for (let t = 0; t < tris; t++) {
     const o = t * 9;
     const ax = pos[o]!;
@@ -190,8 +190,26 @@ export function buildChunk(
     const wx = ox + (ax + pos[o + 3]! + pos[o + 6]!) / 3;
     const wy = oy + (ay + pos[o + 4]! + pos[o + 7]!) / 3;
     const wz = oz + (az + pos[o + 5]! + pos[o + 8]!) / 3;
-    spine(seed, wz, p, sp);
-    faceColour(seed, p, pal, sp, wx, wy, wz, nyn, s.out.cellTri[t]!, key, rgba, t * 12);
+    ctx.at(wz);
+    const { a, b, t: bt } = ctx.blend;
+    const params = a === b || bt === 0 ? a.params : ctx.blend.params;
+    spine(seed, wz, params, sp);
+    faceColour(
+      seed,
+      params,
+      a.palette,
+      b.palette,
+      bt,
+      sp,
+      wx,
+      wy,
+      wz,
+      nyn,
+      s.out.cellTri[t]!,
+      key,
+      rgba,
+      t * 12,
+    );
     rgba.copyWithin(t * 12 + 4, t * 12, t * 12 + 4);
     rgba.copyWithin(t * 12 + 8, t * 12, t * 12 + 4);
   }
