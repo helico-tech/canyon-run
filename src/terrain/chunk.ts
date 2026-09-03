@@ -2,7 +2,8 @@
 // colours. Output is a pure function of (seed, cx, cy, cz).
 import { blendAt } from './biomes.ts';
 import { faceColour } from './colour.ts';
-import { crystalNear } from './features.ts';
+import { crystalNear, FEATURE_GATE } from './features.ts';
+import type { Rgb } from './palette.ts';
 import { FieldContext } from './field.ts';
 import {
   CELL_SIZE,
@@ -77,8 +78,8 @@ export function fillGrid(seed: number, cx: number, cy: number, cz: number, s: Ch
   for (let z = 0; z < SAMPLES; z++) {
     const wz = oz + z * CELL_SIZE;
     ctx.at(wz);
-    const { a, b, t } = ctx.blend;
-    const bound = Math.max(shellBound(a.params), t > 0 ? shellBound(b.params) : 0) + CELL_DIAG;
+    const { t, pa, pb } = ctx.blend;
+    const bound = Math.max(shellBound(pa), t > 0 ? shellBound(pb) : 0) + CELL_DIAG;
     for (let y = 0; y < SAMPLES; y++) {
       const wy = oy + y * CELL_SIZE;
       for (let x = 0; x < SAMPLES; x++) {
@@ -117,7 +118,7 @@ export function slabEnvelope(
   for (let z = 0; z <= SAMPLES - 1; z += 4) {
     const wz = oz + z * CELL_SIZE;
     const bl = blendAt(seed, wz);
-    for (const p of bl.a === bl.b || bl.t === 0 ? [bl.a.params] : [bl.a.params, bl.b.params]) {
+    for (const p of bl.t === 0 ? [bl.pa] : [bl.pa, bl.pb]) {
       spine(seed, wz, p, sp);
       const reach = sp.hw * (1 + p.profileLip);
       minX = Math.min(minX, sp.cx - reach);
@@ -193,12 +194,16 @@ export function buildChunk(
     const wz = oz + (az + pos[o + 5]! + pos[o + 8]!) / 3;
     ctx.at(wz);
     const { a, b, t: bt } = ctx.blend;
-    const params = a === b || bt === 0 ? a.params : ctx.blend.params;
+    const params = ctx.blend.params;
     spine(seed, wz, params, sp);
     let tint = -1;
-    if (a.palette.crystals) {
-      const c = crystalNear(wx, wy, wz, ctx.featsA, 1.2);
-      if (c) tint = c.tint;
+    let override: Rgb | null = null;
+    const near =
+      crystalNear(wx, wy, wz, ctx.featsA, 1.2) ??
+      (bt > 0 ? crystalNear(wx, wy, wz, ctx.featsB, 1.2) : null);
+    if (near) {
+      if (near.kind === FEATURE_GATE) override = b.palette.accent;
+      else tint = near.tint;
     }
     faceColour(
       seed,
@@ -216,6 +221,7 @@ export function buildChunk(
       rgba,
       t * 12,
       tint,
+      override,
     );
     rgba.copyWithin(t * 12 + 4, t * 12, t * 12 + 4);
     rgba.copyWithin(t * 12 + 8, t * 12, t * 12 + 4);

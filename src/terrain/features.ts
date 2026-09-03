@@ -4,6 +4,8 @@
 import type { FieldParams } from './params.ts';
 import { hash1, hash2, hash3, noise3, unit01 } from './noise.ts';
 import { spine, createSpine } from './spine.ts';
+import { distanceToBoundary, inClearZone, segmentAt } from './biomes.ts';
+import { CLEAR_HALF } from './difficulty.ts';
 
 /**
  * Distance returned when no feature is nearer. Evaluators gather features within
@@ -23,6 +25,10 @@ export const FEATURE_CRYSTAL = 4;
 export const FEATURE_MESA = 5;
 /** Floating ellipsoid rock on a 3D cell. */
 export const FEATURE_ROCK = 6;
+/** Biome gate: two pillars and a lintel at a segment boundary, accent coloured. */
+export const FEATURE_GATE = 7;
+export const GATE_RADIUS = 3;
+export const GATE_LINTEL_DROP = 22;
 
 /** 8 tilt angles from -35° to +35° as (cos, sin) literals. */
 const TILT = new Float64Array([
@@ -115,6 +121,7 @@ export function gatherFeatures(
         const r = p.pillarRadius * (0.7 + 0.6 * unit01(hash2(gx, gz, seed ^ 0x5444)));
         const fr = r * 1.25 + FEATURE_CLAMP;
         if (px + fr < x0 || px - fr > x1 || pz + fr < z0 || pz - fr > z1) continue;
+        if (inClearZone(pz)) continue;
         const pf = feature(FEATURE_PILLAR, px, 0, pz, r, 0, fr);
         pf.big2 = p.pillarStepLen;
         out.push(pf);
@@ -137,6 +144,7 @@ export function gatherFeatures(
           p.boulderRMin + (p.boulderRMax - p.boulderRMin) * unit01(hash2(gx, gz, seed ^ 0x6444));
         const fr = r * 1.2 + FEATURE_CLAMP;
         if (bx + fr < x0 || bx - fr > x1 || bz + fr < z0 || bz - fr > z1) continue;
+        if (inClearZone(bz)) continue;
         spine(seed, bz, p, sp);
         out.push(feature(FEATURE_BOULDER, bx, sp.floorY + 0.4 * r, bz, r, 0, fr));
       }
@@ -155,6 +163,7 @@ export function gatherFeatures(
       const big = sp.hw * 1.1;
       const fr = big + r + FEATURE_CLAMP;
       if (az + fr < z0 || az - fr > z1 || sp.cx + fr < x0 || sp.cx - fr > x1) continue;
+      if (distanceToBoundary(az) < CLEAR_HALF + r) continue;
       out.push(feature(FEATURE_ARCH, sp.cx, sp.floorY + 0.25 * p.height, az, r, big, fr));
     }
   }
@@ -187,6 +196,7 @@ export function gatherFeatures(
           p.crystalHMin + (p.crystalHMax - p.crystalHMin) * unit01(hash2(gx, gz, seed ^ 0x9666));
         const fr = h + r + FEATURE_CLAMP;
         if (cx + fr < x0 || cx - fr > x1 || cz + fr < z0 || cz - fr > z1) continue;
+        if (inClearZone(cz)) continue;
         const f = feature(FEATURE_CRYSTAL, cx, y, cz, r, h, fr);
         const ti = hash2(gx, gz, seed ^ 0x9777);
         f.dx = TILT[(ti & 7) * 2]!;
@@ -221,6 +231,7 @@ export function gatherFeatures(
             p.rockRMin + (p.rockRMax - p.rockRMin) * unit01(hash3(gx, gy, gz, seed ^ 0xb555));
           const fr = r * 1.5 * 1.2 + FEATURE_CLAMP;
           if (rx + fr < x0 || rx - fr > x1 || rz + fr < z0 || rz - fr > z1) continue;
+          if (distanceToBoundary(rz) < CLEAR_HALF + r * 1.5) continue;
           const f = feature(FEATURE_ROCK, rx, ry, rz, r, 0, fr);
           // Per-axis scale in [0.7, 1.5] from the hash: dx, dy, dz.
           const h = hash3(gx, gy, gz, seed ^ 0xb666);
@@ -248,11 +259,29 @@ export function gatherFeatures(
           p.mesaSizeMin + (p.mesaSizeMax - p.mesaSizeMin) * unit01(hash2(gx, gz, seed ^ 0xa444));
         const fr = size + FEATURE_CLAMP;
         if (mx + fr < x0 || mx - fr > x1 || mz + fr < z0 || mz - fr > z1) continue;
+        if (distanceToBoundary(mz) < CLEAR_HALF + size) continue;
         spine(seed, mz, p, sp);
         const f = feature(FEATURE_MESA, mx, sp.floorY - 6, mz, size * 0.5, p.mesaHeight, fr);
         f.big2 = size * (0.5 + 0.4 * unit01(hash2(gx, gz, seed ^ 0xa555))) * 0.5; // half depth
         out.push(f);
       }
+    }
+  }
+  {
+    // One gate per segment boundary inside the box (plus reach).
+    const reach = p.halfWidth * 1.5 + GATE_RADIUS + FEATURE_CLAMP;
+    let seg = segmentAt(z0 - reach);
+    for (let guard = 0; guard < 8 && Number.isFinite(seg.end) && seg.end <= z1 + reach; guard++) {
+      const gz = seg.end;
+      spine(seed, gz, p, sp);
+      const half = sp.hw * 0.9;
+      const fr = half + GATE_RADIUS + FEATURE_CLAMP;
+      if (!(gz + fr < z0 || gz - fr > z1 || sp.cx + fr < x0 || sp.cx - fr > x1)) {
+        const f = feature(FEATURE_GATE, sp.cx, sp.floorY - 4, gz, GATE_RADIUS, half, fr);
+        f.big2 = sp.ceilY - GATE_LINTEL_DROP - (sp.floorY - 4); // pillar height
+        out.push(f);
+      }
+      seg = segmentAt(gz + 1);
     }
   }
   if (p.tunnelProb > 0) {
@@ -273,6 +302,7 @@ export function gatherFeatures(
       const fr = len + r + FEATURE_CLAMP;
       const x = sp.cx + side * sp.hw * 0.8;
       if (tz + fr < z0 || tz - fr > z1 || x + fr < x0 || x - fr > x1) continue;
+      if (distanceToBoundary(tz) < CLEAR_HALF + len) continue;
       const f = feature(FEATURE_TUNNEL, x, sp.coreY, tz, r, len, fr);
       f.dx = TUNNEL_DIRS[di * 3]!;
       f.dy = TUNNEL_DIRS[di * 3 + 1]!;
@@ -339,6 +369,16 @@ export function featuresSD(seed: number, x: number, y: number, z: number, list: 
       if (d0 - 0.2 * f.r >= best) continue;
       const bulge = 0.2 * f.r * noise3(x * 0.12, y * 0.12, z * 0.12, seed ^ 0xb777);
       sd = d0 - bulge;
+    } else if (f.kind === FEATURE_GATE) {
+      const dy = y - f.y;
+      // Two vertical capsules at x = ±big and a horizontal lintel at the top between them.
+      const ax = Math.abs(dx) - f.big;
+      const ty = dy < 0 ? 0 : dy > f.big2 ? f.big2 : dy;
+      const pillar = Math.sqrt(ax * ax + (dy - ty) * (dy - ty) + dz * dz) - f.r;
+      const lx = dx < -f.big ? -f.big : dx > f.big ? f.big : dx;
+      const ly = dy - f.big2;
+      const lintel = Math.sqrt((dx - lx) * (dx - lx) + ly * ly + dz * dz) - f.r;
+      sd = pillar < lintel ? pillar : lintel;
     } else if (f.kind === FEATURE_MESA) {
       // Rounded box: half extents r (x), big (y, from the base), big2 (z); rounding 3 u.
       const qx = Math.abs(dx) - f.r + 3;
@@ -385,15 +425,25 @@ export function crystalNear(
   let hit: Feature | null = null;
   for (let i = 0; i < list.length; i++) {
     const f = list[i]!;
-    if (f.kind !== FEATURE_CRYSTAL) continue;
+    if (f.kind !== FEATURE_CRYSTAL && f.kind !== FEATURE_GATE) continue;
     const dx = x - f.x;
     const dz = z - f.z;
     if (dx > f.reach || dx < -f.reach || dz > f.reach || dz < -f.reach) continue;
-    const sd = crystalSD(f, dx, y - f.y, dz);
+    const sd = f.kind === FEATURE_GATE ? gateSD(f, dx, y - f.y, dz) : crystalSD(f, dx, y - f.y, dz);
     if (sd < best) {
       best = sd;
       hit = f;
     }
   }
   return hit;
+}
+
+export function gateSD(f: Feature, dx: number, dy: number, dz: number): number {
+  const ax = Math.abs(dx) - f.big;
+  const ty = dy < 0 ? 0 : dy > f.big2 ? f.big2 : dy;
+  const pillar = Math.sqrt(ax * ax + (dy - ty) * (dy - ty) + dz * dz) - f.r;
+  const lx = dx < -f.big ? -f.big : dx > f.big ? f.big : dx;
+  const ly = dy - f.big2;
+  const lintel = Math.sqrt((dx - lx) * (dx - lx) + ly * ly + dz * dz) - f.r;
+  return pillar < lintel ? pillar : lintel;
 }

@@ -1,9 +1,10 @@
 // One fixed tick of the flight model (spec §5.3). Pure: reads only state, input
 // and constants; the only randomness is the sim's own PRNG.
+import { segmentAt } from '../terrain/biomes.ts';
 import { spineAt } from '../terrain/field.ts';
 import { createSpine } from '../terrain/spine.ts';
 import { CollisionScratch, hullHits, prepareTick, proximityAt } from './collision.ts';
-import { C } from './constants.ts';
+import { C, speedFloor } from './constants.ts';
 import type { InputFrame } from './input.ts';
 import { KEY } from './input.ts';
 import { sfc32Next, u32ToUnit } from './prng.ts';
@@ -92,12 +93,14 @@ export function step(
   s.qz = scratch.quat[2]!;
   s.qw = scratch.quat[3]!;
 
+  const segBefore = segmentAt(s.z).index;
+  const floor = speedFloor(segBefore);
   s.throttle = clamp(s.throttle + kThr * C.THROTTLE_PER_TICK, 0, 1);
-  const target = C.MIN_SPEED + s.throttle * (C.MAX_SPEED - C.MIN_SPEED);
+  const target = floor + s.throttle * (C.MAX_SPEED - floor);
   s.speed += (target - s.speed) * C.SPEED_LERP;
   s.speed = clamp(
     s.speed - C.DIVE_GAIN * fwdY * C.DT,
-    C.MIN_SPEED * 0.6,
+    floor * 0.6,
     C.MAX_SPEED + C.OVERSPEED_MARGIN,
   );
 
@@ -130,5 +133,7 @@ export function step(
   const sf = clamp((s.speed - C.MIN_SPEED) / (C.MAX_SPEED - C.MIN_SPEED), 0, 1);
   const rate = C.SCORE_FLOOR + (1 - C.SCORE_FLOOR) * sf * sf;
   s.score += Math.floor(C.SCORE_PER_TICK * rate * (1 + C.PROX_BONUS * s.proximity));
+  // Passing a biome gate (segment boundary) while alive pays a bonus.
+  if (s.alive && segmentAt(s.z).index > segBefore) s.score += C.GATE_BONUS;
   s.tick++;
 }

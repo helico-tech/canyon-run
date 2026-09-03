@@ -122,46 +122,39 @@ export class FieldContext {
     this.z0 = z0;
     this.z1 = z1;
     this.z = Number.NaN;
-    this.gatheredA = null;
-    this.gatheredB = null;
+    this.gatheredA = -1;
+    this.gatheredB = -1;
   }
 
-  private gatheredA: FieldParams | null = null;
-  private gatheredB: FieldParams | null = null;
+  private gatheredA = -1;
+  private gatheredB = -1;
 
   /** Prepares blend and spines for z (cached while z is unchanged). */
   at(z: number): void {
     if (z === this.z) return;
     this.z = z;
     blendAt(this.seed, z, this.blend);
-    const { a, b, t } = this.blend;
-    spine(this.seed, z, a.params, this.spA);
-    if (a.params !== this.gatheredA) {
-      this.featsA = gatherFeatures(
-        this.seed,
-        a.params,
-        this.x0,
-        this.x1,
-        this.z0,
-        this.z1,
-        this.featsA,
-      );
-      this.gatheredA = a.params;
+    const { segA, segB, t, pa, pb } = this.blend;
+    spine(this.seed, z, pa, this.spA);
+    // Feature sets depend on the segment's difficulty-scaled params: cache by segment index.
+    if (segA !== this.gatheredA) {
+      this.featsA = gatherFeatures(this.seed, pa, this.x0, this.x1, this.z0, this.z1, this.featsA);
+      this.gatheredA = segA;
     }
-    if (a !== b && t > 0) {
-      spine(this.seed, z, b.params, this.spB);
+    if (t > 0) {
+      spine(this.seed, z, pb, this.spB);
       spine(this.seed, z, this.blend.params, this.spMix);
-      if (b.params !== this.gatheredB) {
+      if (segB !== this.gatheredB) {
         this.featsB = gatherFeatures(
           this.seed,
-          b.params,
+          pb,
           this.x0,
           this.x1,
           this.z0,
           this.z1,
           this.featsB,
         );
-        this.gatheredB = b.params;
+        this.gatheredB = segB;
       }
     }
   }
@@ -182,18 +175,18 @@ export class FieldContext {
 
   /** Features-only rock (deep air branch of the shell skip). */
   featureRock(x: number, y: number, z: number): number {
-    const { a, b, t } = this.blend;
+    const { t } = this.blend;
     const fa = -featuresSD(this.seed, x, y, z, this.featsA);
-    if (a === b || t === 0) return fa;
+    if (t === 0) return fa;
     return lerp(fa, -featuresSD(this.seed, x, y, z, this.featsB), t);
   }
 
   /** Full field at (x, y, z); call at(z) first. */
   density(x: number, y: number, z: number): number {
-    const { a, b, t } = this.blend;
-    if (a === b || t === 0) return fullDensity(this.seed, a.params, this.spA, this.featsA, x, y, z);
-    const da = biomeDensity(this.seed, a.params, this.spA, this.featsA, x, y, z);
-    const db = biomeDensity(this.seed, b.params, this.spB, this.featsB, x, y, z);
+    const { t, pa, pb } = this.blend;
+    if (t === 0) return fullDensity(this.seed, pa, this.spA, this.featsA, x, y, z);
+    const da = biomeDensity(this.seed, pa, this.spA, this.featsA, x, y, z);
+    const db = biomeDensity(this.seed, pb, this.spB, this.featsB, x, y, z);
     return Math.min(lerp(da, db, t), coreDistance(this.blend.params, this.spMix, x, y));
   }
 }
@@ -216,8 +209,7 @@ export class FieldSampler {
   /** Mixed corridor spine at z (ceiling, floor, core). */
   spineAt(z: number): Spine {
     this.ctx.at(z);
-    const { a, b, t } = this.ctx.blend;
-    return a === b || t === 0 ? this.ctx.spA : this.ctx.spMix;
+    return this.ctx.blend.t === 0 ? this.ctx.spA : this.ctx.spMix;
   }
 
   density(x: number, y: number, z: number): number {
@@ -227,9 +219,10 @@ export class FieldSampler {
 }
 
 /** Mixed corridor spine at z for callers that only need the envelope (sim ceiling, pilot). */
+const spineBlend = createBlend();
 export function spineAt(seed: number, z: number, out: Spine = createSpine()): Spine {
-  const bl = blendAt(seed, z);
-  return spine(seed, z, bl.a === bl.b || bl.t === 0 ? bl.a.params : bl.params, out);
+  const bl = blendAt(seed, z, spineBlend);
+  return spine(seed, z, bl.params, out);
 }
 
 /** Standalone full evaluation at one point (gathers features around it). Convenience, not the hot path. */

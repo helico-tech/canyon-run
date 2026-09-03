@@ -1,5 +1,12 @@
 // Biome registry, sequencing along z, and parameter/palette blending (ADR 0004 §6).
 // Even segments are the canyon hub; odd segments pick a special biome by hash.
+import {
+  CLEAR_HALF,
+  FEATURE_FACTOR,
+  ROUGHNESS_FACTOR,
+  tableAt,
+  WIDTH_FACTOR,
+} from './difficulty.ts';
 import { hash1, lerp, smoothstep } from './noise.ts';
 import type { BiomePalette, Rgb } from './palette.ts';
 import { CANYON_PALETTE } from './palette.ts';
@@ -64,12 +71,63 @@ export interface Blend {
   b: BiomeDef;
   /** 0 = pure a, 1 = pure b. */
   t: number;
-  /** Mixed field params, valid when a !== b (else a.params). */
+  /** a's and b's params with their segment's difficulty applied. */
+  pa: FieldParams;
+  pb: FieldParams;
+  /** Mixed params (lerp of pa and pb by t); equals pa when a === b or t === 0. */
   params: FieldParams;
+  /** Segment index of a and b. */
+  segA: number;
+  segB: number;
 }
 
 export function createBlend(): Blend {
-  return { a: CANYON_BIOME, b: CANYON_BIOME, t: 0, params: { ...CANYON } };
+  return {
+    a: CANYON_BIOME,
+    b: CANYON_BIOME,
+    t: 0,
+    pa: { ...CANYON },
+    pb: { ...CANYON },
+    params: { ...CANYON },
+    segA: 0,
+    segB: 0,
+  };
+}
+
+/** Copies `src` into `out` with the difficulty of segment `index` applied. */
+export function applyDifficulty(src: FieldParams, index: number, out: FieldParams): FieldParams {
+  const o = out as unknown as Record<string, number>;
+  const p = src as unknown as Record<string, number>;
+  for (const k in p) o[k] = p[k]!;
+  const w = tableAt(WIDTH_FACTOR, index);
+  const f = tableAt(FEATURE_FACTOR, index);
+  const r = tableAt(ROUGHNESS_FACTOR, index);
+  out.halfWidth = src.halfWidth * w;
+  out.ridgeAmp = src.ridgeAmp * r;
+  out.detailAmp = src.detailAmp * r;
+  const prob = (v: number): number => (v * f > 0.95 ? 0.95 : v * f);
+  out.pillarProb = prob(src.pillarProb);
+  out.boulderProb = prob(src.boulderProb);
+  out.archProb = prob(src.archProb);
+  out.rockProb = prob(src.rockProb);
+  out.crystalFloorProb = prob(src.crystalFloorProb);
+  out.crystalWallProb = prob(src.crystalWallProb);
+  out.mesaProb = prob(src.mesaProb);
+  out.tunnelProb = prob(src.tunnelProb);
+  return out;
+}
+
+/** Distance from z to the nearest segment boundary (Infinity before the first). */
+export function distanceToBoundary(z: number): number {
+  const seg = segmentAt(z);
+  const toEnd = Number.isFinite(seg.end) ? seg.end - z : Infinity;
+  const toStart = seg.index > 0 ? z - seg.start : Infinity;
+  return toEnd < toStart ? toEnd : toStart;
+}
+
+/** True inside the feature-free zone around a boundary (where the gate stands). */
+export function inClearZone(z: number): boolean {
+  return distanceToBoundary(z) < CLEAR_HALF;
 }
 
 /** Lerps every numeric field. Frequencies are lerped too, but the field never uses a mixed frequency: blends evaluate both fields (see field.ts). */
@@ -94,25 +152,34 @@ export function blendAt(seed: number, z: number, out: Blend = createBlend()): Bl
   const seg = segmentAt(z);
   const here = biomeForSegment(seed, seg.index);
   const half = BLEND_LENGTH * 0.5;
-  let other = here;
-  let t = 0;
   if (z > seg.end - half && Number.isFinite(seg.end)) {
-    other = biomeForSegment(seed, seg.index + 1);
-    t = smoothstep(seg.end - half, seg.end + half, z);
+    const next = biomeForSegment(seed, seg.index + 1);
+    out.a = here;
+    out.b = next;
+    out.segA = seg.index;
+    out.segB = seg.index + 1;
+    out.t = smoothstep(seg.end - half, seg.end + half, z);
   } else if (z < seg.start + half && Number.isFinite(seg.start) && seg.index > 0) {
-    // Second half of the blend that started in the previous segment: a is the previous biome.
-    const prev = biomeForSegment(seed, seg.index - 1);
-    out.a = prev;
+    // Second half of the blend that started in the previous segment.
+    out.a = biomeForSegment(seed, seg.index - 1);
     out.b = here;
+    out.segA = seg.index - 1;
+    out.segB = seg.index;
     out.t = smoothstep(seg.start - half, seg.start + half, z);
-    if (prev === here) out.t = 0;
-    else mixParams(prev.params, here.params, out.t, out.params);
-    return out;
+  } else {
+    out.a = here;
+    out.b = here;
+    out.segA = seg.index;
+    out.segB = seg.index;
+    out.t = 0;
   }
-  out.a = here;
-  out.b = other;
-  out.t = other === here ? 0 : t;
-  if (other !== here) mixParams(here.params, other.params, out.t, out.params);
+  applyDifficulty(out.a.params, out.segA, out.pa);
+  if (out.t > 0) {
+    applyDifficulty(out.b.params, out.segB, out.pb);
+    mixParams(out.pa, out.pb, out.t, out.params);
+  } else {
+    mixParams(out.pa, out.pa, 0, out.params);
+  }
   return out;
 }
 

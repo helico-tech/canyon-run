@@ -6,9 +6,10 @@ import { fnv1a32String } from './hash.ts';
 export const C = Object.freeze({
   TICK_RATE: 60,
   DT: 1 / 60,
-  // speed (u/s)
+  // speed (u/s). MIN_SPEED is the scoring reference; the enforced floor rises per segment.
   MIN_SPEED: 50,
   MAX_SPEED: 170,
+  SPEED_FLOOR: [50, 54, 58, 62, 66, 70, 74, 78, 82, 86, 90],
   OVERSPEED_MARGIN: 30,
   THROTTLE_PER_TICK: 1 / 90,
   SPEED_LERP: 0.03,
@@ -33,6 +34,7 @@ export const C = Object.freeze({
   SCORE_PER_TICK: 1000,
   SCORE_FLOOR: 0.2,
   PROX_BONUS: 1.0,
+  GATE_BONUS: 1500000,
   // start
   START_THROTTLE: 0.5,
 });
@@ -40,7 +42,14 @@ export const C = Object.freeze({
 export type Constants = typeof C;
 
 /** FNV-1a over the canonical JSON of the sorted constant entries. */
-export function hashConstants(c: Record<string, number> = C): number {
+export function hashConstants(c: Record<string, number | readonly number[]> = C): number {
   const keys = Object.keys(c).sort();
   return fnv1a32String(JSON.stringify(keys.map((k) => [k, c[k]])));
+}
+
+/** Enforced minimum speed for a segment index (last table entry beyond the table). */
+export function speedFloor(segment: number): number {
+  const t = C.SPEED_FLOOR;
+  const i = segment < 0 ? 0 : segment >= t.length ? t.length - 1 : segment;
+  return t[i]!;
 }

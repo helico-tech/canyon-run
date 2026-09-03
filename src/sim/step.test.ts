@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { CANYON } from '../terrain/params.ts';
 import { spine } from '../terrain/spine.ts';
-import { C, hashConstants } from './constants.ts';
+import { C, hashConstants, speedFloor } from './constants.ts';
 import { KEY, ZERO_INPUT } from './input.ts';
 import { basis } from './quat.ts';
 import { checksum, cloneState, createState } from './state.ts';
@@ -152,4 +152,18 @@ test('throughput is logged (not asserted)', () => {
   console.info(
     `sim: ${((n / ms) * 1000).toFixed(0)} ticks/s, alive=${s.alive}, z=${s.z.toFixed(0)}`,
   );
+});
+
+test('crossing a segment boundary pays the gate bonus once and raises the speed floor', () => {
+  const s = createState(1);
+  const ghost = new StepScratch(1, { ghost: true });
+  s.z = 1199.5; // crosses 1200 on the first tick at floor speed (0.83 u per tick)
+  const before = s.score;
+  step(s, ZERO_INPUT, ghost);
+  step(s, ZERO_INPUT, ghost);
+  expect(s.score - before).toBeGreaterThanOrEqual(C.GATE_BONUS);
+  expect(s.score - before).toBeLessThan(C.GATE_BONUS + 5000);
+  expect(speedFloor(0)).toBe(50);
+  expect(speedFloor(1)).toBe(54);
+  expect(speedFloor(99)).toBe(90);
 });

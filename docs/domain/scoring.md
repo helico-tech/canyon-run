@@ -16,4 +16,7 @@ score += points
   extra because the roof is far from the probe unless the plane is pushed into it.
 - `score / 1000` reads as "seconds at full speed".
 
-Event bonuses (near misses, gates) come in CR-0024 and CR-0022.
+- Passing a biome gate (segment boundary) adds `GATE_BONUS = 1 500 000` milli-points (CR-0022).
+- The enforced speed floor rises per segment (docs/domain/difficulty.md); `sf` keeps the constant reference so scores stay comparable.
+
+Near-miss events come in CR-0024.

@@ -2,7 +2,7 @@
 // and floor, so colour bytes are identical everywhere. In a biome blend both
 // palettes are looked up and lerped.
 import { hash3, lerp, noise3, unit01 } from './noise.ts';
-import type { BiomePalette } from './palette.ts';
+import type { BiomePalette, Rgb } from './palette.ts';
 import { rampLookup } from './palette.ts';
 import type { FieldParams } from './params.ts';
 import type { Spine } from './spine.ts';
@@ -54,6 +54,7 @@ export function faceColour(
   out: Uint8Array,
   o: number,
   tint = -1,
+  override: Rgb | null = null,
 ): void {
   const material = materialOf(ny);
   let h = (y - sp.floorY) / p.height;
@@ -66,7 +67,11 @@ export function faceColour(
     rgbA[1] = lerp(rgbA[1]!, rgbB[1]!, t);
     rgbA[2] = lerp(rgbA[2]!, rgbB[2]!, t);
   }
-  if (tint >= 0 && palA.crystals) {
+  if (override) {
+    rgbA[0] = override[0];
+    rgbA[1] = override[1];
+    rgbA[2] = override[2];
+  } else if (tint >= 0 && palA.crystals) {
     const c = palA.crystals[tint % palA.crystals.length]!;
     rgbA[0] = c[0];
     rgbA[1] = c[1];

@@ -1,7 +1,7 @@
 ---
 id: CR-0022
 epic: EPIC-06
-status: todo
+status: done
 ---
 # CR-0022 Biome gates and difficulty progression
 
@@ -15,3 +15,10 @@ status: todo
 - Goldens regenerated deliberately (`pnpm sim:regold`) with the version bump noted in the commit.
 
 **Verification.** `pnpm check`, headless sheet at a boundary in `docs/evidence/`.
+
+**Delivered notes.** Difficulty is applied per segment to the biome params
+before blending (`applyDifficulty`), so adjacent segments blend smoothly even
+when the biome repeats. The 150 u straight was not implemented: the spine
+wander cannot be flattened locally without a discontinuity, and the clear zone
+plus the core tube already make gates safe. Evidence in
+`docs/evidence/2026-09-03-CR-0022/`.
