@@ -1,7 +1,7 @@
 ---
 id: CR-0014
 epic: EPIC-05
-status: todo
+status: done
 ---
 # CR-0014 Run lifecycle: start screen, death, restart, seeds, best score
 
@@ -15,3 +15,8 @@ status: todo
 - Death freezes the sim; the panel shows after 600 ms; input during the panel is ignored except R/N/Enter.
 
 **Verification.** Playwright: force a collision via `__game.teleport`, assert the panel appears and R restarts with `tick = 0`.
+
+**Delivered notes.** Seed sources: `?seed=`, `#seed=`, last seed, random; the
+URL hash is rewritten on every run so links share canyons. `Game.restart`
+keeps the worker and meshes when the seed is unchanged. Evidence in
+`docs/evidence/2026-09-03-CR-0014/`.

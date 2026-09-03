@@ -22,6 +22,7 @@ export interface GameOptions {
 }
 
 export type InputSource = (s: SimState) => InputFrame;
+export type Phase = 'idle' | 'running' | 'dead';
 
 export class Game {
   readonly renderer: Renderer;
@@ -35,7 +36,11 @@ export class Game {
   frames = 0;
   /** Called after every render with the interpolated state (HUD hook). */
   onRender: ((state: SimState, alpha: number) => void) | null = null;
+  /** Called once when the plane dies. */
+  onDeath: ((state: SimState) => void) | null = null;
   replayLabel: string | null = null;
+  phase: Phase = 'idle';
+  topSpeed = 0;
 
   constructor(canvas: HTMLCanvasElement, opts: GameOptions) {
     this.renderer = new Renderer(canvas, {
@@ -88,6 +93,37 @@ export class Game {
   tick(input: InputFrame): void {
     copyState(this.prev, this.state);
     step(this.state, input, this.scratch);
+    if (this.state.speed > this.topSpeed) this.topSpeed = this.state.speed;
+    if (this.state.alive === 0 && this.phase !== 'dead') {
+      this.phase = 'dead';
+      this.onDeath?.(this.state);
+    }
+  }
+
+  start(): void {
+    if (this.phase === 'idle') this.phase = 'running';
+  }
+
+  /** New run on `seed` (same seed keeps the chunk cache). Under 300 ms either way. */
+  restart(seed: number = this.state.seed): void {
+    const s = seed >>> 0;
+    this.state = createState(s);
+    this.prev = cloneState(this.state);
+    this.scratch = new StepScratch(s);
+    this.topSpeed = 0;
+    this.replayLabel = null;
+    this.forcedInput = null;
+    this.world.reset(s);
+    this.world.update(this.state.z);
+    this.phase = 'running';
+  }
+
+  /** Test hook: moves the plane (collision is evaluated on the next tick). */
+  teleport(x: number, y: number, z: number): void {
+    this.state.x = x;
+    this.state.y = y;
+    this.state.z = z;
+    copyState(this.prev, this.state);
   }
 
   /** n ticks using the forced input or the current source, then a ring update. */
@@ -139,6 +175,7 @@ export class Game {
   snapshot(): Record<string, number | string> {
     const s = this.state;
     return {
+      phase: this.phase,
       tick: s.tick,
       alive: s.alive,
       x: s.x,

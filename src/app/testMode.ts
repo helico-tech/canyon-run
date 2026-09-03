@@ -9,6 +9,8 @@ export interface GameTestApi {
   state(): Record<string, number | string>;
   setInput(input: InputFrame | null): void;
   loadReplay(replay: unknown): void;
+  teleport(x: number, y: number, z: number): void;
+  restart(seed?: number): void;
   frameHash(): string;
   readPixel(x: number, y: number): [number, number, number, number];
   dataURL(): string;
@@ -57,6 +59,8 @@ export function installTestApi(game: Game, canvas: HTMLCanvasElement, simVersion
     state: () => game.snapshot(),
     setInput: (input) => game.setInput(input),
     loadReplay: (replay) => game.loadReplay(replay),
+    teleport: (x, y, z) => game.teleport(x, y, z),
+    restart: (seed) => game.restart(seed),
     frameHash: () => game.renderer.frameHash().toString(16).padStart(8, '0'),
     readPixel: (x, y) => game.renderer.readPixel(x, y),
     dataURL: () => canvas.toDataURL('image/png'),

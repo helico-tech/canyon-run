@@ -8,13 +8,22 @@ import { TerrainClient } from './terrainClient.ts';
 export const UPLOADS_PER_FRAME = 4;
 
 export class World {
-  readonly seed: number;
+  seed: number;
   private readonly renderer: Renderer;
-  private readonly terrain: TerrainClient;
+  private terrain: TerrainClient;
 
   constructor(seed: number, renderer: Renderer) {
     this.seed = seed;
     this.renderer = renderer;
+    this.terrain = new TerrainClient(seed);
+  }
+
+  /** Same seed keeps the chunk cache; a new seed replaces the worker and clears meshes. */
+  reset(seed: number): void {
+    if (seed === this.seed) return;
+    this.terrain.dispose();
+    this.renderer.evictBelow(Infinity);
+    this.seed = seed;
     this.terrain = new TerrainClient(seed);
   }
 

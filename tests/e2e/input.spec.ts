@@ -10,10 +10,10 @@ test('the real-time loop runs and keyboard input reaches the sim', async ({ page
     await page.setViewportSize({ width: 480, height: 270 });
     await page.goto(`${server.url}/?debug=1&seed=1`);
     await page.waitForFunction(() => window.__game?.ready === true, undefined, { timeout: 60000 });
+    await page.locator('.screen.start .cta').click(); // start screen: click to fly
     await page.waitForFunction(() => Number(window.__game!.state().tick) > 10, undefined, {
       timeout: 30000,
     });
-    await page.mouse.click(240, 135);
     const before = await page.evaluate(() => window.__game!.state());
     await page.keyboard.down('KeyS');
     await page.waitForTimeout(400);
