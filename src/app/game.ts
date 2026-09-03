@@ -12,6 +12,7 @@ import { createPilot } from '../sim/pilot.ts';
 import { decodeRuns, isReplay, Recorder } from '../sim/replay.ts';
 import type { Replay } from '../sim/replay.ts';
 import { checksum, cloneState, copyState, createState } from '../sim/state.ts';
+import { hex32 } from '../sim/hash.ts';
 import { basis } from '../sim/quat.ts';
 import type { SimState } from '../sim/state.ts';
 import { step, StepScratch } from '../sim/step.ts';
@@ -40,8 +41,9 @@ export class Game {
   prev: SimState;
   private scratch: StepScratch;
   private source: InputSource;
+  /** The source restart() returns to (player sampler or pilot); replays are temporary. */
+  private defaultSource: InputSource;
   private forcedInput: InputFrame | null = null;
-  frames = 0;
   /** Called after every render with the interpolated state (HUD hook). */
   onRender: ((state: SimState, alpha: number) => void) | null = null;
   /** Called once when the plane dies. */
@@ -69,6 +71,7 @@ export class Game {
     this.prev = cloneState(this.state);
     this.scratch = new StepScratch(opts.seed);
     this.source = createPilot(opts.seed);
+    this.defaultSource = this.source;
     this.recorder = new Recorder(opts.seed);
     this.world = new World(opts.seed, this.renderer, opts.workers);
     this.world.update(this.state.z);
@@ -83,14 +86,11 @@ export class Game {
     return this.state.seed;
   }
 
-  /** Replaces the input source (player sampler, pilot, replay). */
+  /** Replaces the input source (player sampler or pilot); restart() returns to it. */
   setSource(source: InputSource): void {
     this.source = source;
+    this.defaultSource = source;
     this.forcedInput = null;
-  }
-
-  usePilot(): void {
-    this.setSource(createPilot(this.state.seed));
   }
 
   /** Fixed input for the next ticks (null = current source). */
@@ -105,10 +105,11 @@ export class Game {
       throw new Error(`replay seed ${replay.seed} != game seed ${this.state.seed}`);
     const frames = decodeRuns(replay.runs);
     this.replayLabel = `replay ${replay.ticks} ticks`;
-    this.setSource(() => {
+    this.forcedInput = null;
+    this.source = () => {
       const next = frames.next();
       return next.done ? ZERO_INPUT : next.value;
-    });
+    };
   }
 
   /** One tick with the given input; the render interpolates from the previous state. */
@@ -155,6 +156,7 @@ export class Game {
     this.deathTick = -1;
     this.renderer.clearShards();
     this.replayLabel = null;
+    this.source = this.defaultSource;
     this.forcedInput = null;
     this.world.reset(s);
     this.world.update(this.state.z);
@@ -260,7 +262,6 @@ export class Game {
   render(alpha = 1): void {
     this.renderer.setAtmosphere(atmosphereAtZ(this.state.seed, this.state.z));
     this.renderer.render(this.pose(alpha));
-    this.frames++;
     this.onRender?.(this.state, alpha);
   }
 
@@ -282,7 +283,7 @@ export class Game {
       streakTicks: s.streakTicks,
       eventId: s.eventId,
       eventPoints: s.eventPoints,
-      checksum: (checksum(s) >>> 0).toString(16).padStart(8, '0'),
+      checksum: hex32(checksum(s)),
     };
   }
 }

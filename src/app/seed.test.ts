@@ -13,6 +13,15 @@ test('formats and parses XXXX-XXXX, plain hex and decimal', () => {
   expect(parseSeed('')).toBeNull();
 });
 
+test('every formatted seed round-trips, including all-digit hex', () => {
+  for (const seed of [0x12345678, 0x10000000, 0x99999999, 1, 0xffffffff, 0xdeadbeef]) {
+    expect(parseSeed(formatSeed(seed))).toBe(seed);
+    expect(seedFromHash(hashForSeed(seed))).toBe(seed);
+  }
+  expect(parseSeed('0x12345678')).toBe(0x12345678);
+  expect(parseSeed('12345678')).toBe(12345678);
+});
+
 test('round-trips through the URL hash', () => {
   expect(seedFromHash(hashForSeed(7))).toBe(7);
   expect(seedFromHash('#seed=0000-00FF&x=1')).toBe(255);

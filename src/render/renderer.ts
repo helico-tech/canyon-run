@@ -34,8 +34,6 @@ export interface GameRenderer {
   ): void;
   clearShards(): void;
   addChunk(chunk: ChunkMesh): void;
-  hasChunk(cx: number, cy: number, cz: number): boolean;
-  removeChunk(cx: number, cy: number, cz: number): void;
   evictBelow(minCz: number): number;
   readonly chunkCount: number;
   triangleCount(): number;
@@ -147,19 +145,6 @@ export class Renderer implements GameRenderer {
     const mesh = toThreeMesh(chunk, this.material);
     this.chunks.set(id, mesh);
     this.scene.add(mesh);
-  }
-
-  hasChunk(cx: number, cy: number, cz: number): boolean {
-    return this.chunks.has(chunkId(cx, cy, cz));
-  }
-
-  removeChunk(cx: number, cy: number, cz: number): void {
-    const id = chunkId(cx, cy, cz);
-    const mesh = this.chunks.get(id);
-    if (!mesh) return;
-    this.scene.remove(mesh);
-    disposeMesh(mesh);
-    this.chunks.delete(id);
   }
 
   /** Removes every chunk whose slab is below `minCz`. */

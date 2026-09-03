@@ -137,14 +137,10 @@ export function simulateReplay(
     return { verdict: 'version-mismatch', detail: `constantsHash ${r.constantsHash} != ${ch}` };
   if (r.tickRate !== C.TICK_RATE)
     return { verdict: 'version-mismatch', detail: `tickRate ${r.tickRate} != ${C.TICK_RATE}` };
+  const shape = checkShape(r);
+  if (shape) return { verdict: 'malformed', detail: shape };
   if (runsLength(r.runs) < r.ticks)
     return { verdict: 'malformed', detail: 'fewer inputs than ticks' };
-  for (const run of r.runs) {
-    if (run.length !== 4 || run.some((v) => !Number.isInteger(v)))
-      return { verdict: 'malformed', detail: 'bad run' };
-    if ((run[1] & ~KEY_MASK) !== 0)
-      return { verdict: 'malformed', detail: 'reserved key bits set' };
-  }
   const cps = new Map<number, string>();
   for (const [t, h] of r.checkpoints) cps.set(t, h);
   const state = createState(r.seed);
@@ -174,7 +170,50 @@ export function simulateReplay(
   return { verdict: 'ok', score: state.score, checksum: finalChecksum, ticks: tick, state };
 }
 
+/** Structural validation of runs and checkpoints; returns a reason or null. */
+export function checkShape(r: Replay): string | null {
+  if (!Number.isInteger(r.ticks) || r.ticks < 0) return 'ticks must be a non-negative integer';
+  for (const run of r.runs) {
+    if (!Array.isArray(run) || run.length !== 4) return 'bad run';
+    if (run.some((v) => !Number.isInteger(v))) return 'bad run';
+    if (run[0] < 1 || run[0] > 65535) return 'bad run count';
+    if ((run[1] & ~KEY_MASK) !== 0) return 'reserved key bits set';
+    if (run[2] < -32768 || run[2] > 32767 || run[3] < -32768 || run[3] > 32767)
+      return 'mouse delta out of range';
+  }
+  for (const cp of r.checkpoints) {
+    if (
+      !Array.isArray(cp) ||
+      cp.length !== 2 ||
+      !Number.isInteger(cp[0]) ||
+      typeof cp[1] !== 'string'
+    )
+      return 'bad checkpoint';
+  }
+  return null;
+}
+
 export const validateReplay = simulateReplay;
+
+/**
+ * Reference simulation for tooling: plays `ticks` ticks of a replay (zero input
+ * after the recording ends, like the browser) and returns the final state.
+ */
+export function simulateTicks(
+  r: Replay,
+  ticks: number,
+  opts: { onTick?: (s: SimState, tick: number) => void } = {},
+): SimState {
+  const state = createState(r.seed);
+  const scratch = new StepScratch(r.seed);
+  const frames = decodeRuns(r.runs);
+  for (let tick = 1; tick <= ticks; tick++) {
+    const next = frames.next();
+    step(state, next.done ? { keys: 0, dx: 0, dy: 0 } : next.value, scratch);
+    opts.onTick?.(state, tick);
+  }
+  return state;
+}
 
 /** Drives a policy for `ticks` ticks and returns the replay. */
 export function recordRun(

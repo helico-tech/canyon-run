@@ -9,10 +9,19 @@ import type { InputFrame } from './input.ts';
 import { KEY } from './input.ts';
 import { sfc32Next, u32ToUnit } from './prng.ts';
 import { basis, integrate } from './quat.ts';
+import { clamp } from '../terrain/noise.ts';
 import type { SimState } from './state.ts';
 
-function clamp(v: number, lo: number, hi: number): number {
-  return v < lo ? lo : v > hi ? hi : v;
+/** Speed-driven part of the score rate (SCORE_FLOOR at the reference minimum, 1 at MAX). */
+export function scoreRate(s: SimState): number {
+  const sf = clamp((s.speed - C.MIN_SPEED) / (C.MAX_SPEED - C.MIN_SPEED), 0, 1);
+  return C.SCORE_FLOOR + (1 - C.SCORE_FLOOR) * sf * sf;
+}
+
+/** Proximity and streak multiplier on top of the rate. */
+export function scoreFactor(s: SimState): number {
+  const streak = s.streakTicks < C.STREAK_FULL ? s.streakTicks / C.STREAK_FULL : 1;
+  return 1 + C.PROX_BONUS * s.proximity + C.STREAK_BONUS * streak;
 }
 
 /** Reusable scratch for one seed; results never depend on it. */
@@ -144,11 +153,7 @@ export function step(
       s.graceTicks = 0;
     }
   }
-  const streak = s.streakTicks < C.STREAK_FULL ? s.streakTicks / C.STREAK_FULL : 1;
-  const rate = C.SCORE_FLOOR + (1 - C.SCORE_FLOOR) * sf * sf;
-  s.score += Math.floor(
-    C.SCORE_PER_TICK * rate * (1 + C.PROX_BONUS * s.proximity + C.STREAK_BONUS * streak),
-  );
+  s.score += Math.floor(C.SCORE_PER_TICK * scoreRate(s) * scoreFactor(s));
 
   // Near-miss events: CLOSE / SO CLOSE when a close pass ends, THREADED between two near walls.
   if (s.cooldown > 0) s.cooldown--;

@@ -63,6 +63,11 @@ export interface Feature {
   tint: number;
 }
 
+/** Inclusive cell index range covering [lo − reach, hi + reach] on a lattice of spacing s. */
+function cellRange(lo: number, hi: number, reach: number, s: number): [number, number] {
+  return [Math.floor((lo - reach) / s), Math.floor((hi + reach) / s)];
+}
+
 function feature(
   kind: number,
   x: number,
@@ -109,10 +114,8 @@ export function gatherFeatures(
   if (p.pillarProb > 0) {
     const reach = pillarReach(p);
     const s = p.pillarSpacing;
-    const gx0 = Math.floor((x0 - reach) / s);
-    const gx1 = Math.floor((x1 + reach) / s);
-    const gz0 = Math.floor((z0 - reach) / s);
-    const gz1 = Math.floor((z1 + reach) / s);
+    const [gx0, gx1] = cellRange(x0, x1, reach, s);
+    const [gz0, gz1] = cellRange(z0, z1, reach, s);
     for (let gz = gz0; gz <= gz1; gz++) {
       for (let gx = gx0; gx <= gx1; gx++) {
         if (unit01(hash2(gx, gz, seed ^ 0x5111)) > p.pillarProb) continue;
@@ -131,10 +134,8 @@ export function gatherFeatures(
   if (p.boulderProb > 0) {
     const reach = boulderReach(p);
     const s = p.boulderSpacing;
-    const gx0 = Math.floor((x0 - reach) / s);
-    const gx1 = Math.floor((x1 + reach) / s);
-    const gz0 = Math.floor((z0 - reach) / s);
-    const gz1 = Math.floor((z1 + reach) / s);
+    const [gx0, gx1] = cellRange(x0, x1, reach, s);
+    const [gz0, gz1] = cellRange(z0, z1, reach, s);
     for (let gz = gz0; gz <= gz1; gz++) {
       for (let gx = gx0; gx <= gx1; gx++) {
         if (unit01(hash2(gx, gz, seed ^ 0x6111)) > p.boulderProb) continue;
@@ -153,8 +154,7 @@ export function gatherFeatures(
   if (p.archProb > 0) {
     const reach = archReach(p);
     const s = p.archSpacing;
-    const gz0 = Math.floor((z0 - reach) / s);
-    const gz1 = Math.floor((z1 + reach) / s);
+    const [gz0, gz1] = cellRange(z0, z1, reach, s);
     for (let gz = gz0; gz <= gz1; gz++) {
       if (unit01(hash1(gz, seed ^ 0x7111)) > p.archProb) continue;
       const az = (gz + 0.2 + 0.6 * unit01(hash1(gz, seed ^ 0x7222))) * s;
@@ -170,10 +170,8 @@ export function gatherFeatures(
   if (p.crystalFloorProb > 0 || p.crystalWallProb > 0) {
     const reach = crystalReach(p);
     const s = p.crystalSpacing;
-    const gx0 = Math.floor((x0 - reach) / s);
-    const gx1 = Math.floor((x1 + reach) / s);
-    const gz0 = Math.floor((z0 - reach) / s);
-    const gz1 = Math.floor((z1 + reach) / s);
+    const [gx0, gx1] = cellRange(x0, x1, reach, s);
+    const [gz0, gz1] = cellRange(z0, z1, reach, s);
     for (let gz = gz0; gz <= gz1; gz++) {
       for (let gx = gx0; gx <= gx1; gx++) {
         const roll = unit01(hash2(gx, gz, seed ^ 0x9111));
@@ -211,10 +209,8 @@ export function gatherFeatures(
   if (p.rockProb > 0) {
     const reach = rockReach(p);
     const s = p.rockSpacing;
-    const gx0 = Math.floor((x0 - reach) / s);
-    const gx1 = Math.floor((x1 + reach) / s);
-    const gz0 = Math.floor((z0 - reach) / s);
-    const gz1 = Math.floor((z1 + reach) / s);
+    const [gx0, gx1] = cellRange(x0, x1, reach, s);
+    const [gz0, gz1] = cellRange(z0, z1, reach, s);
     for (let gz = gz0; gz <= gz1; gz++) {
       spine(seed, (gz + 0.5) * s, p, sp);
       const gy0 = Math.floor((sp.floorY + 10) / s);
@@ -246,10 +242,8 @@ export function gatherFeatures(
   if (p.mesaProb > 0) {
     const reach = mesaReach(p);
     const s = p.mesaSpacing;
-    const gx0 = Math.floor((x0 - reach) / s);
-    const gx1 = Math.floor((x1 + reach) / s);
-    const gz0 = Math.floor((z0 - reach) / s);
-    const gz1 = Math.floor((z1 + reach) / s);
+    const [gx0, gx1] = cellRange(x0, x1, reach, s);
+    const [gz0, gz1] = cellRange(z0, z1, reach, s);
     for (let gz = gz0; gz <= gz1; gz++) {
       for (let gx = gx0; gx <= gx1; gx++) {
         if (unit01(hash2(gx, gz, seed ^ 0xa111)) > p.mesaProb) continue;
@@ -287,8 +281,7 @@ export function gatherFeatures(
   if (p.tunnelProb > 0) {
     const s = p.tunnelSpacing;
     const reach = p.tunnelLenMax + p.tunnelRMax + FEATURE_CLAMP;
-    const gz0 = Math.floor((z0 - reach) / s);
-    const gz1 = Math.floor((z1 + reach) / s);
+    const [gz0, gz1] = cellRange(z0, z1, reach, s);
     for (let gz = gz0; gz <= gz1; gz++) {
       if (unit01(hash1(gz, seed ^ 0x8111)) > p.tunnelProb) continue;
       const tz = (gz + 0.2 + 0.6 * unit01(hash1(gz, seed ^ 0x8222))) * s;
@@ -370,15 +363,7 @@ export function featuresSD(seed: number, x: number, y: number, z: number, list: 
       const bulge = 0.2 * f.r * noise3(x * 0.12, y * 0.12, z * 0.12, seed ^ 0xb777);
       sd = d0 - bulge;
     } else if (f.kind === FEATURE_GATE) {
-      const dy = y - f.y;
-      // Two vertical capsules at x = ±big and a horizontal lintel at the top between them.
-      const ax = Math.abs(dx) - f.big;
-      const ty = dy < 0 ? 0 : dy > f.big2 ? f.big2 : dy;
-      const pillar = Math.sqrt(ax * ax + (dy - ty) * (dy - ty) + dz * dz) - f.r;
-      const lx = dx < -f.big ? -f.big : dx > f.big ? f.big : dx;
-      const ly = dy - f.big2;
-      const lintel = Math.sqrt((dx - lx) * (dx - lx) + ly * ly + dz * dz) - f.r;
-      sd = pillar < lintel ? pillar : lintel;
+      sd = gateSD(f, dx, y - f.y, dz);
     } else if (f.kind === FEATURE_MESA) {
       // Rounded box: half extents r (x), big (y, from the base), big2 (z); rounding 3 u.
       const qx = Math.abs(dx) - f.r + 3;

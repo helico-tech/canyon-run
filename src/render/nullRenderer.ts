@@ -15,12 +15,6 @@ export class NullRenderer implements GameRenderer {
   addChunk(chunk: ChunkMesh): void {
     this.chunks.set(`${chunk.cx},${chunk.cy},${chunk.cz}`, chunk.tris);
   }
-  hasChunk(cx: number, cy: number, cz: number): boolean {
-    return this.chunks.has(`${cx},${cy},${cz}`);
-  }
-  removeChunk(cx: number, cy: number, cz: number): void {
-    this.chunks.delete(`${cx},${cy},${cz}`);
-  }
   evictBelow(minCz: number): number {
     let n = 0;
     for (const id of this.chunks.keys()) {

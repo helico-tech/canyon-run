@@ -2,6 +2,8 @@
 import { C } from '../sim/constants.ts';
 import type { SimState } from '../sim/state.ts';
 import { basis } from '../sim/quat.ts';
+import { scoreFactor, scoreRate } from '../sim/step.ts';
+import { formatSeed } from './seed.ts';
 
 export interface HudView {
   /** Normalised altitude in the corridor: 0 floor, 1 ceiling clamp. */
@@ -24,20 +26,6 @@ function el(tag: string, cls: string, text = ''): HTMLElement {
   e.className = cls;
   if (text) e.textContent = text;
   return e;
-}
-
-export function formatSeed(seed: number): string {
-  const hex = (seed >>> 0).toString(16).toUpperCase().padStart(8, '0');
-  return `${hex.slice(0, 4)}-${hex.slice(4)}`;
-}
-
-export function scoreRate(state: SimState): number {
-  const sf = Math.min(Math.max((state.speed - C.MIN_SPEED) / (C.MAX_SPEED - C.MIN_SPEED), 0), 1);
-  const streak = Math.min(state.streakTicks / C.STREAK_FULL, 1);
-  return (
-    (C.SCORE_FLOOR + (1 - C.SCORE_FLOOR) * sf * sf) *
-    (1 + C.PROX_BONUS * state.proximity + C.STREAK_BONUS * streak)
-  );
 }
 
 export const EVENT_NAMES = ['', 'close', 'so close', 'threaded', 'gate'];
@@ -141,7 +129,7 @@ export function createHud(parent: HTMLElement): Hud {
       if (nowMs - lastText >= TEXT_INTERVAL_MS) {
         lastText = nowMs;
         scoreValue.textContent = Math.floor(state.score / 1000).toLocaleString('en-US');
-        mult.textContent = `x${scoreRate(state).toFixed(1)}`;
+        mult.textContent = `x${(scoreRate(state) * scoreFactor(state)).toFixed(1)}`;
         speedValue.textContent = `${Math.round(state.speed)}`;
         if (view.replayLabel !== null) replay.textContent = view.replayLabel;
       }

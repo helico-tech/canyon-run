@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createPilot } from '../../src/sim/pilot.ts';
-import { recordRun, simulateReplay } from '../../src/sim/replay.ts';
+import { recordRun, simulateTicks } from '../../src/sim/replay.ts';
 import type { Replay } from '../../src/sim/replay.ts';
 import { checksum } from '../../src/sim/state.ts';
 import { hex32 } from '../../src/sim/hash.ts';
@@ -135,12 +135,8 @@ export async function runHeadless(o: RunOptions): Promise<RunResult> {
   // Node re-simulation for the checksum gate.
   let nodeChecksum: string;
   if (o.replay) {
-    const v = simulateReplay({
-      ...o.replay,
-      ticks: Math.min((o.skip ?? 0) + o.frames, o.replay.ticks),
-    });
-    if (v.verdict === 'ok') nodeChecksum = v.checksum;
-    else nodeChecksum = `node:${v.verdict}`;
+    // The browser plays the replay's inputs then zero input, for skip + frames ticks; do the same here.
+    nodeChecksum = hex32(checksum(simulateTicks(o.replay, (o.skip ?? 0) + o.frames)));
   } else {
     const { state } = recordRun(seed, (o.skip ?? 0) + o.frames, createPilot(seed));
     nodeChecksum = hex32(checksum(state));

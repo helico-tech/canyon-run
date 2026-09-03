@@ -17,6 +17,8 @@ export interface Atmosphere {
   accent?: Rgb;
 }
 
+export const SUN_DIR: readonly [number, number, number] = [0.4965, 0.5736, 0.6516];
+
 export function atmosphereFor(p: BiomePalette): Atmosphere {
   return {
     horizon: p.horizon,
@@ -25,7 +27,7 @@ export function atmosphereFor(p: BiomePalette): Atmosphere {
     sunIntensity: 2.2,
     hemiIntensity: 0.9,
     fogDensity: 0.0038,
-    sunDir: [0.4965, 0.5736, 0.6516],
+    sunDir: SUN_DIR,
     ambient: [171, 103.2, 86.4],
     ground: [140.25, 114.75, 76.5],
   };
@@ -34,8 +36,6 @@ export function atmosphereFor(p: BiomePalette): Atmosphere {
 export function rgbToFloat(c: Rgb): [number, number, number] {
   return [c[0] / 255, c[1] / 255, c[2] / 255];
 }
-
-export const SUN_DIR: readonly [number, number, number] = [0.4965, 0.5736, 0.6516];
 
 /** Atmosphere blended between the biomes in force at z. */
 export function atmosphereAtZ(seed: number, z: number): Atmosphere {

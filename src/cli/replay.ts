@@ -4,21 +4,7 @@
 import fs from 'node:fs';
 import { createPilot } from '../sim/pilot.ts';
 import { recordRun, validateReplay } from '../sim/replay.ts';
-
-function flags(argv: string[]): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]!;
-    if (a.startsWith('--')) {
-      const next = argv[i + 1];
-      if (next !== undefined && !next.startsWith('--')) {
-        out[a.slice(2)] = next;
-        i++;
-      } else out[a.slice(2)] = 'true';
-    }
-  }
-  return out;
-}
+import { parseArgs } from './args.ts';
 
 const [cmd, ...rest] = process.argv.slice(2);
 if (cmd === 'validate') {
@@ -46,7 +32,7 @@ if (cmd === 'validate') {
   console.log(JSON.stringify({ ...v, ms }));
   process.exit(1);
 } else if (cmd === 'run') {
-  const f = flags(rest);
+  const f = parseArgs(rest);
   const seed = Number(f.seed ?? 1) >>> 0;
   const ticks = Number(f.ticks ?? 1800);
   const throttle = (f.throttle ?? 'vary') as 'vary' | 'full' | 'idle';

@@ -64,8 +64,3 @@ export function proximityOf(d: number): number {
   const prox = -d / C.PROXIMITY_RANGE;
   return prox < 0 ? 0 : prox > 1 ? 1 : prox;
 }
-
-/** [0, 1]: 1 touching rock, 0 at PROXIMITY_RANGE or further. */
-export function proximityAt(cs: CollisionScratch, x: number, y: number, z: number): number {
-  return proximityOf(distanceAt(cs, x, y, z));
-}

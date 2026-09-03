@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { C } from '../sim/constants.ts';
 
 export interface RenderPose {
   x: number;
@@ -34,9 +35,9 @@ const leanQ = new THREE.Quaternion();
 const euler = new THREE.Euler();
 
 /** Lean per unit of body rate (rad per rad/s): roll 3°, pitch 2°, yaw 2° at full command. */
-const LEAN_ROLL = 0.0524 / 3.5;
-const LEAN_PITCH = 0.0349 / 1.75;
-const LEAN_YAW = 0.0349 / 0.7;
+const LEAN_ROLL = 0.0524 / C.ROLL_RATE;
+const LEAN_PITCH = 0.0349 / C.PITCH_RATE;
+const LEAN_YAW = 0.0349 / C.YAW_RATE;
 const SHAKE_MAX = 0.0262; // 1.5°
 
 /** Deterministic smooth noise in [-1, 1] from a time value (28 Hz lattice, quintic fade). */

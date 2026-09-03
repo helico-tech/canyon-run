@@ -7,6 +7,7 @@
 // pitch and yaw commands, and the plane banks into the turn so pitch authority
 // is available for turning.
 import { spineAt } from '../terrain/field.ts';
+import { clamp } from '../terrain/noise.ts';
 import { createSpine } from '../terrain/spine.ts';
 import { C } from './constants.ts';
 import type { InputFrame } from './input.ts';
@@ -15,9 +16,6 @@ import { sfc32Next, sfc32Seed, u32ToUnit } from './prng.ts';
 import { basis } from './quat.ts';
 import type { SimState } from './state.ts';
 
-function clamp(v: number, lo: number, hi: number): number {
-  return v < lo ? lo : v > hi ? hi : v;
-}
 function roundHalfUp(v: number): number {
   return Math.floor(v + 0.5);
 }

@@ -89,7 +89,7 @@ if (test) {
     screens.hideRunOver();
     sampler.releaseAll();
     sampler.enabled = true;
-    if (game.phase === 'idle') game.start();
+    if (game.phase === 'idle' && s === game.seed) game.start();
     else game.restart(s);
     requestLock(canvas);
   };

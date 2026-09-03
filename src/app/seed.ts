@@ -5,11 +5,17 @@ export function formatSeed(seed: number): string {
   return `${hex.slice(0, 4)}-${hex.slice(4)}`;
 }
 
-/** Accepts "XXXX-XXXX", plain hex up to 8 digits, or a decimal number. */
+/**
+ * Accepts "XXXX-XXXX" (always hex, the display form), hex with a letter or a 0x
+ * prefix, or a bare decimal number. Bare digits without a dash are decimal.
+ */
 export function parseSeed(text: string): number | null {
-  const t = text.trim().replace(/-/g, '');
-  if (t === '') return null;
-  if (/^\d{1,10}$/.test(t)) {
+  const raw = text.trim();
+  if (raw === '') return null;
+  const dashed = raw.includes('-');
+  const hexPrefixed = /^0x/i.test(raw);
+  const t = raw.replace(/-/g, '').replace(/^0x/i, '');
+  if (!dashed && !hexPrefixed && /^\d{1,10}$/.test(t)) {
     const n = Number(t);
     return n <= 0xffffffff ? n >>> 0 : null;
   }

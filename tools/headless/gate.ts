@@ -14,7 +14,7 @@ export interface GateInput {
   stats: Array<{ frame: number; stats: FrameStats }>;
   frames: FrameRecord[];
   consoleErrors: string[];
-  nodeChecksum: string | null;
+  nodeChecksum: string;
   /** Last dumped page frame, to check the HUD frame is drawn. */
   hudAnchor?: { width: number; height: number; data: Uint8Array };
 }
@@ -69,8 +69,18 @@ export function runGates(g: GateInput): GateResult[] {
     g.consoleErrors.length === 0,
     g.consoleErrors.slice(0, 3).join(' | ') || 'none',
   );
+  if (g.hudAnchor) {
+    // The altitude bar's 2 px border sits 24 px from the right edge at mid height (hud.css).
+    const { width, height, data } = g.hudAnchor;
+    const x = width - 24 - 1;
+    const y = Math.floor(height / 2);
+    const i = (y * width + x) * 4;
+    const [r, gg, b] = [data[i]!, data[i + 1]!, data[i + 2]!];
+    const ok = Math.abs(r - 244) <= 12 && Math.abs(gg - 232) <= 12 && Math.abs(b - 255) <= 12;
+    add('HUD frame drawn', ok, `altitude bar border pixel ${r},${gg},${b} at ${x},${y}`);
+  }
   const last = g.frames[g.frames.length - 1];
-  if (g.nodeChecksum && last) {
+  if (last) {
     add(
       'sim checksum equals Node',
       last.checksum === g.nodeChecksum,

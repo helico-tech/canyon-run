@@ -20,7 +20,7 @@ export function serveStatic(dir: string): Promise<{ url: string; close: () => vo
     const server = http.createServer((req, res) => {
       const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0]!);
       let file = path.join(dir, urlPath === '/' ? 'index.html' : urlPath);
-      if (!file.startsWith(dir)) {
+      if (file !== dir && !file.startsWith(dir + path.sep)) {
         res.writeHead(403).end();
         return;
       }

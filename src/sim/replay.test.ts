@@ -1,7 +1,9 @@
 import { expect, test } from 'vitest';
 import { sfc32Next, sfc32Seed } from './prng.ts';
 import { createPilot } from './pilot.ts';
-import { decodeRuns, encodeRuns, recordRun, validateReplay } from './replay.ts';
+import { decodeRuns, encodeRuns, recordRun, simulateTicks, validateReplay } from './replay.ts';
+import { checksum } from './state.ts';
+import { hex32 } from './hash.ts';
 import type { Replay } from './replay.ts';
 import { KEY } from './input.ts';
 
@@ -56,4 +58,23 @@ test('version, constants and malformed replays are rejected', () => {
     'score-mismatch',
   );
   expect(validateReplay({} as Replay).verdict).toBe('malformed');
+  expect(validateReplay({ ...replay, runs: ['abcd'] as unknown as Replay['runs'] }).verdict).toBe(
+    'malformed',
+  );
+  expect(
+    validateReplay({ ...replay, checkpoints: [5] as unknown as Replay['checkpoints'] }).verdict,
+  ).toBe('malformed');
+  expect(validateReplay({ ...replay, runs: [[120, 0, 40000, 0]] }).verdict).toBe('malformed');
+});
+
+test('simulateTicks plays a prefix of a replay and zero input past its end', () => {
+  const { replay } = recordRun(9, 300, createPilot(9));
+  const prefix = simulateTicks(replay, 120);
+  expect(prefix.tick).toBe(120);
+  const full = simulateTicks(replay, 300);
+  const v = validateReplay(replay);
+  expect(v.verdict).toBe('ok');
+  if (v.verdict === 'ok') expect(hex32(checksum(full))).toBe(v.checksum);
+  const beyond = simulateTicks(replay, 330);
+  expect(beyond.tick).toBe(330);
 });

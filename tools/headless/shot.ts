@@ -1,25 +1,11 @@
 // One screenshot after N ticks: node tools/headless/shot.ts --seed 1 --ticks 0 --out shot.png
 import fs from 'node:fs';
 import path from 'node:path';
+import { parseArgs } from './args.ts';
 import { openPage } from './browser.ts';
 import { serveStatic } from './serve.ts';
 
-function flags(argv: string[]): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]!;
-    if (a.startsWith('--')) {
-      const next = argv[i + 1];
-      if (next !== undefined && !next.startsWith('--')) {
-        out[a.slice(2)] = next;
-        i++;
-      } else out[a.slice(2)] = 'true';
-    }
-  }
-  return out;
-}
-
-const f = flags(process.argv.slice(2));
+const f = parseArgs(process.argv.slice(2));
 const seed = Number(f.seed ?? 1);
 const ticks = Number(f.ticks ?? 0);
 const width = Number(f.width ?? 640);
