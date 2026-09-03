@@ -224,8 +224,7 @@ pub fn features_sd(seed: u32, x: f64, y: f64, z: f64, feats: &[f64]) -> f64 {
             continue;
         }
         let r = f[F_R];
-        let sd;
-        if kind == FEATURE_PILLAR {
+        let sd = if kind == FEATURE_PILLAR {
             let d0 = (dx * dx + dz * dz).sqrt() - r;
             if d0 - 0.55 * r >= best {
                 continue;
@@ -235,7 +234,7 @@ pub fn features_sd(seed: u32, x: f64, y: f64, z: f64, feats: &[f64]) -> f64 {
             if f[F_BIG2] > 0.0 {
                 bulge += 0.3 * ((to_i32((y / f[F_BIG2]).floor()) & 1) as f64);
             }
-            sd = d0 - r * (bulge - 1.0);
+            d0 - r * (bulge - 1.0)
         } else if kind == FEATURE_BOULDER {
             let dy = y - f[F_Y];
             let d0 = (dx * dx + dy * dy + dz * dz).sqrt() - r;
@@ -243,9 +242,9 @@ pub fn features_sd(seed: u32, x: f64, y: f64, z: f64, feats: &[f64]) -> f64 {
                 continue;
             }
             let bulge = 1.0 + 0.2 * noise3(x * 0.15, y * 0.15, z * 0.15, seed ^ 0x6555);
-            sd = d0 - r * (bulge - 1.0);
+            d0 - r * (bulge - 1.0)
         } else if kind == FEATURE_CRYSTAL {
-            sd = crystal_sd(f, dx, y - f[F_Y], dz);
+            crystal_sd(f, dx, y - f[F_Y], dz)
         } else if kind == FEATURE_ROCK {
             let dy = y - f[F_Y];
             let fdx = f[F_DX];
@@ -271,9 +270,9 @@ pub fn features_sd(seed: u32, x: f64, y: f64, z: f64, feats: &[f64]) -> f64 {
                 continue;
             }
             let bulge = 0.2 * r * noise3(x * 0.12, y * 0.12, z * 0.12, seed ^ 0xb777);
-            sd = d0 - bulge;
+            d0 - bulge
         } else if kind == FEATURE_GATE {
-            sd = gate_sd(f, dx, y - f[F_Y], dz);
+            gate_sd(f, dx, y - f[F_Y], dz)
         } else if kind == FEATURE_BOX {
             let qx = dx.abs() - r + 1.0;
             let qy = (y - f[F_Y]).abs() - f[F_BIG] + 1.0;
@@ -282,8 +281,7 @@ pub fn features_sd(seed: u32, x: f64, y: f64, z: f64, feats: &[f64]) -> f64 {
             let oy = if qy > 0.0 { qy } else { 0.0 };
             let oz = if qz > 0.0 { qz } else { 0.0 };
             let inside = jmax(qx, jmax(qy, qz));
-            sd = (ox * ox + oy * oy + oz * oz).sqrt() + (if inside < 0.0 { inside } else { 0.0 })
-                - 1.0;
+            (ox * ox + oy * oy + oz * oz).sqrt() + (if inside < 0.0 { inside } else { 0.0 }) - 1.0
         } else if kind == FEATURE_MESA {
             let qx = dx.abs() - r + 3.0;
             let qy = (y - f[F_Y] - f[F_BIG] * 0.5).abs() - f[F_BIG] * 0.5 + 3.0;
@@ -292,13 +290,12 @@ pub fn features_sd(seed: u32, x: f64, y: f64, z: f64, feats: &[f64]) -> f64 {
             let oy = if qy > 0.0 { qy } else { 0.0 };
             let oz = if qz > 0.0 { qz } else { 0.0 };
             let inside = jmax(qx, jmax(qy, qz));
-            sd = (ox * ox + oy * oy + oz * oz).sqrt() + (if inside < 0.0 { inside } else { 0.0 })
-                - 3.0;
+            (ox * ox + oy * oy + oz * oz).sqrt() + (if inside < 0.0 { inside } else { 0.0 }) - 3.0
         } else {
             let dy = y - f[F_Y];
             let ring = (dx * dx + dy * dy).sqrt() - f[F_BIG];
-            sd = (ring * ring + dz * dz).sqrt() - r;
-        }
+            (ring * ring + dz * dz).sqrt() - r
+        };
         if sd < best {
             best = sd;
         }
