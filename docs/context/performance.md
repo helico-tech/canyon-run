@@ -18,3 +18,18 @@ measured a wasm port of the field at 2.9× faster; leaner octaves or a second
 worker are the other levers (CR-0027).
 
 Resident geometry for 640 u: ~184 k triangles, 8.4 MB of vertex data.
+
+## Per-biome chunk cost (2026-09-03, CR-0021, `scratchpad/census-biomes.ts`, 4 slabs each)
+
+| Biome | Candidates / slab | Non-empty / slab | Triangles / slab | Max tris / chunk | ms / candidate | ms / slab |
+|---|---|---|---|---|---|---|
+| canyon (hub) | 15 | 7.4 | 18 400 | 5 681 | 12.1 | 185 |
+| cave | 9 | 3.3 | 10 700 | 10 114 | 12.4 | 112 |
+| crystal spires | 16 | 6.3 | 17 100 | 5 116 | 10.9 | 174 |
+| lava rift | 12 | 9.8 | 20 100 | 5 111 | 13.6 | 163 |
+| hoodoo desert | 22 | 16 | 49 100 | 9 070 | 17.8 | 390 |
+| floating archipelago | 26 | 11.8 | 38 500 | 7 610 | 16.3 | 428 |
+
+At 170 u/s (2.65 slabs/s) the wide halls need ~1.0–1.1 s of worker time per
+second of flight: a single JS worker cannot keep the ring full there. See the
+issue filed for CR-0027 (second worker or wasm field).

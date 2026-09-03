@@ -5,6 +5,8 @@ export interface FieldParams {
   /** Corridor half width and floor-to-ceiling height. */
   halfWidth: number;
   height: number;
+  /** Shifts the floor (and everything above it) relative to the shared spine altitude. */
+  floorOffset: number;
   /** Guaranteed-air tube radius and its height as a fraction of `height`. */
   coreRadius: number;
   coreYFrac: number;
@@ -62,6 +64,11 @@ export interface FieldParams {
   archProb: number;
   archRMin: number;
   archRMax: number;
+  /** Floating rocks: ellipsoids on 3D cells inside the corridor (probability 0 disables). */
+  rockSpacing: number;
+  rockProb: number;
+  rockRMin: number;
+  rockRMax: number;
   /** Crystals: tilted hex prisms on the floor and walls (2D cells); probability 0 disables. */
   crystalSpacing: number;
   crystalFloorProb: number;
@@ -82,6 +89,7 @@ export interface FieldParams {
 export const CANYON: FieldParams = Object.freeze({
   halfWidth: 40,
   height: 110,
+  floorOffset: 0,
   coreRadius: 12,
   coreYFrac: 0.45,
   wanderAmp1: 80,
@@ -130,6 +138,10 @@ export const CANYON: FieldParams = Object.freeze({
   archProb: 0.3,
   archRMin: 5,
   archRMax: 9,
+  rockSpacing: 48,
+  rockProb: 0,
+  rockRMin: 6,
+  rockRMax: 18,
   crystalSpacing: 24,
   crystalFloorProb: 0,
   crystalWallProb: 0,

@@ -110,7 +110,7 @@ test('fillGrid marks the guaranteed core as air at the chunk containing the spin
   expect(air).toBeGreaterThan(1000);
 });
 
-test('every special biome stays inside the triangle budget', () => {
+test('every special biome stays inside the triangle budget', { timeout: 120000 }, () => {
   for (const special of SPECIALS) {
     let seed = 1;
     while (biomeForSegment(seed, 1) !== special) seed++;

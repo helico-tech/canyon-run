@@ -148,4 +148,5 @@ import { CAVE_BIOME } from './biomes/cave.ts';
 import { SPIRES_BIOME } from './biomes/spires.ts';
 import { LAVA_BIOME } from './biomes/lava.ts';
 import { HOODOO_BIOME } from './biomes/hoodoo.ts';
-SPECIALS.push(CAVE_BIOME, SPIRES_BIOME, LAVA_BIOME, HOODOO_BIOME);
+import { ARCHIPELAGO_BIOME } from './biomes/archipelago.ts';
+SPECIALS.push(CAVE_BIOME, SPIRES_BIOME, LAVA_BIOME, HOODOO_BIOME, ARCHIPELAGO_BIOME);

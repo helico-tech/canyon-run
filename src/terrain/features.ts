@@ -2,7 +2,7 @@
 // pure functions of (seed, feature cell); any evaluator anywhere reconstructs the
 // same set, so chunk meshing and simulation collision agree.
 import type { FieldParams } from './params.ts';
-import { hash1, hash2, noise3, unit01 } from './noise.ts';
+import { hash1, hash2, hash3, noise3, unit01 } from './noise.ts';
 import { spine, createSpine } from './spine.ts';
 
 /**
@@ -21,6 +21,8 @@ export const FEATURE_TUNNEL = 3;
 export const FEATURE_CRYSTAL = 4;
 /** Rounded box on the floor (rock). */
 export const FEATURE_MESA = 5;
+/** Floating ellipsoid rock on a 3D cell. */
+export const FEATURE_ROCK = 6;
 
 /** 8 tilt angles from -35° to +35° as (cos, sin) literals. */
 const TILT = new Float64Array([
@@ -81,6 +83,9 @@ function crystalReach(p: FieldParams): number {
 }
 function mesaReach(p: FieldParams): number {
   return p.mesaSizeMax + FEATURE_CLAMP;
+}
+function rockReach(p: FieldParams): number {
+  return p.rockRMax * 1.5 * 1.2 + FEATURE_CLAMP;
 }
 
 /** Collects every feature whose reach can touch the box [x0,x1]×[z0,z1]. */
@@ -193,6 +198,40 @@ export function gatherFeatures(
       }
     }
   }
+  if (p.rockProb > 0) {
+    const reach = rockReach(p);
+    const s = p.rockSpacing;
+    const gx0 = Math.floor((x0 - reach) / s);
+    const gx1 = Math.floor((x1 + reach) / s);
+    const gz0 = Math.floor((z0 - reach) / s);
+    const gz1 = Math.floor((z1 + reach) / s);
+    for (let gz = gz0; gz <= gz1; gz++) {
+      spine(seed, (gz + 0.5) * s, p, sp);
+      const gy0 = Math.floor((sp.floorY + 10) / s);
+      const gy1 = Math.floor((sp.ceilY - 10) / s);
+      for (let gy = gy0; gy <= gy1; gy++) {
+        for (let gx = gx0; gx <= gx1; gx++) {
+          if (unit01(hash3(gx, gy, gz, seed ^ 0xb111)) > p.rockProb) continue;
+          const rx = (gx + 0.2 + 0.6 * unit01(hash3(gx, gy, gz, seed ^ 0xb222))) * s;
+          const ry = (gy + 0.2 + 0.6 * unit01(hash3(gx, gy, gz, seed ^ 0xb333))) * s;
+          const rz = (gz + 0.2 + 0.6 * unit01(hash3(gx, gy, gz, seed ^ 0xb444))) * s;
+          // Only inside the corridor, away from the walls and the core.
+          if (Math.abs(rx - sp.cx) > sp.hw * 0.85) continue;
+          const r =
+            p.rockRMin + (p.rockRMax - p.rockRMin) * unit01(hash3(gx, gy, gz, seed ^ 0xb555));
+          const fr = r * 1.5 * 1.2 + FEATURE_CLAMP;
+          if (rx + fr < x0 || rx - fr > x1 || rz + fr < z0 || rz - fr > z1) continue;
+          const f = feature(FEATURE_ROCK, rx, ry, rz, r, 0, fr);
+          // Per-axis scale in [0.7, 1.5] from the hash: dx, dy, dz.
+          const h = hash3(gx, gy, gz, seed ^ 0xb666);
+          f.dx = 0.7 + 0.8 * ((h & 255) / 255);
+          f.dy = 0.7 + 0.8 * (((h >>> 8) & 255) / 255);
+          f.dz = 0.7 + 0.8 * (((h >>> 16) & 255) / 255);
+          out.push(f);
+        }
+      }
+    }
+  }
   if (p.mesaProb > 0) {
     const reach = mesaReach(p);
     const s = p.mesaSpacing;
@@ -290,6 +329,16 @@ export function featuresSD(seed: number, x: number, y: number, z: number, list: 
       sd = d0 - f.r * (bulge - 1);
     } else if (f.kind === FEATURE_CRYSTAL) {
       sd = crystalSD(f, dx, y - f.y, dz);
+    } else if (f.kind === FEATURE_ROCK) {
+      const dy = y - f.y;
+      const ex = dx / (f.r * f.dx);
+      const ey = dy / (f.r * f.dy);
+      const ez = dz / (f.r * f.dz);
+      const minAxis = f.r * (f.dx < f.dy ? (f.dx < f.dz ? f.dx : f.dz) : f.dy < f.dz ? f.dy : f.dz);
+      const d0 = (Math.sqrt(ex * ex + ey * ey + ez * ez) - 1) * minAxis;
+      if (d0 - 0.2 * f.r >= best) continue;
+      const bulge = 0.2 * f.r * noise3(x * 0.12, y * 0.12, z * 0.12, seed ^ 0xb777);
+      sd = d0 - bulge;
     } else if (f.kind === FEATURE_MESA) {
       // Rounded box: half extents r (x), big (y, from the base), big2 (z); rounding 3 u.
       const qx = Math.abs(dx) - f.r + 3;

@@ -1,7 +1,7 @@
 ---
 id: CR-0021
 epic: EPIC-06
-status: todo
+status: done
 ---
 # CR-0021 Biome: floating-archipelago
 
@@ -16,3 +16,9 @@ status: todo
 - Existing goldens still pass (canyon segments unchanged).
 
 **Verification.** `pnpm check`, headless sheet, goldens.
+
+**Delivered notes.** Added `floorOffset` (spine altitude shift per biome) and
+a floating-rock feature on 3D cells (ellipsoid with per-axis scale and a ridged
+bulge). Hanging chains were left out. The five-biome budget test needed a
+longer timeout. Goldens regenerated (SIM_VERSION 0.1.6). Evidence in
+`docs/evidence/2026-09-03-CR-0021/`.

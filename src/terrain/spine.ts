@@ -18,7 +18,7 @@ export function spine(seed: number, z: number, p: FieldParams, out: Spine = crea
   out.cx =
     p.wanderAmp1 * fbm1(z / p.wanderLen1, seed ^ 0x101, 2) +
     p.wanderAmp2 * vnoise1(z / p.wanderLen2, seed ^ 0x104);
-  out.floorY = p.floorWanderAmp * fbm1(z / p.floorWanderLen, seed ^ 0x102, 2);
+  out.floorY = p.floorWanderAmp * fbm1(z / p.floorWanderLen, seed ^ 0x102, 2) + p.floorOffset;
   out.ceilY = out.floorY + p.height;
   out.coreY = out.floorY + p.height * p.coreYFrac;
   out.hw = p.halfWidth * (1 + p.widthVar * vnoise1(z / p.widthLen, seed ^ 0x103));
