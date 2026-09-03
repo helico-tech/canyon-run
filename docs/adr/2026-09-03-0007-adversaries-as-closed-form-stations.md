@@ -41,6 +41,12 @@ designed the concepts and the machinery.
    Node audit proves that a hull-sized free disc inside the core exists at
    every tick of every period and is reachable under a lateral speed bound.
    The scripted pilot gets a predictive lateral offset planner.
+   > **AMENDED 2026-09-03 (CR-0033):** the "free disc" is now the level
+   > five-probe hull itself (8 u wide, under 3 u tall), so thin bodies leave
+   > lanes above and below; the thickness floor became a 2 u depth along z
+   > (the sub-step spacing); a body crossing the core must not spin, is
+   > clamped to leave a 3 u vertical lane, and a vertical crosser is a
+   > press that dips in from the roomier side and never passes through.
 6. **Rendering.** Instanced meshes per shape driven by the same pose
    function; an unlit "core" instance carries the telegraph; a bar frame marks
    the station on the walls. No worker changes.

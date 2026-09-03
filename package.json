@@ -25,7 +25,8 @@
     "headless": "node tools/headless/run.ts",
     "headless:golden": "node tools/headless/golden.ts",
     "test:e2e": "pnpm build && playwright test",
-    "issue": "node scripts/issues.ts"
+    "issue": "node scripts/issues.ts",
+    "adv:audit": "node tools/adversary-audit.ts"
   },
   "dependencies": {
     "three": "0.185.1"

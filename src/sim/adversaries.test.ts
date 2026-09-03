@@ -5,14 +5,15 @@ import { spineAt } from '../terrain/field.ts';
 import { CANYON } from '../terrain/params.ts';
 import type { AdversaryParams } from '../terrain/params.ts';
 import {
+  MOTION_CLOSE,
+  SHAPE_RING,
   advPoseAt,
   circle,
   createPose,
   createStation,
   gatherStations,
-  MOTION_CLOSE,
+  hullClearance,
   phase01,
-  SHAPE_RING,
   stationSD,
   swing,
   tri,
@@ -130,15 +131,15 @@ test('a hull-sized free disc exists inside the core at every tick; segment 0 kee
       const sp = spineAt(seed, st.z);
       for (let t = 0; t <= st.period; t += 1) {
         advPoseAt(st, t, st.z - 50, pose);
-        // Candidate free-disc centres: the core centre and a ring inside the core.
+        // Candidate hull centres: the core centre and an ellipse of positions inside the core.
         let free = false;
         let clearCore = stationSD(st, pose, sp.cx, sp.coreY, st.z) > 0;
-        if (stationSD(st, pose, sp.cx, sp.coreY, st.z) >= HULL_R) free = true;
+        if (hullClearance(st, pose, sp.cx, sp.coreY, st.z) >= 0) free = true;
         for (let k = 0; k < 12; k++) {
           const ang = (k / 12) * Math.PI * 2;
           const px = sp.cx + Math.cos(ang) * (st.core - HULL_R - 0.5);
-          const py = sp.coreY + Math.sin(ang) * (st.core - HULL_R - 0.5);
-          if (stationSD(st, pose, px, py, st.z) >= HULL_R) free = true;
+          const py = sp.coreY + Math.sin(ang) * (st.core - C.ADV_HULL_RY - 0.5);
+          if (hullClearance(st, pose, px, py, st.z) >= 0) free = true;
           const edgeX = sp.cx + Math.cos(ang) * (st.core - 0.5);
           const edgeY = sp.coreY + Math.sin(ang) * (st.core - 0.5);
           if (stationSD(st, pose, edgeX, edgeY, st.z) <= 0) clearCore = false;

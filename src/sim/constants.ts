@@ -60,6 +60,8 @@ export const C = Object.freeze({
   ADV_CORE_FROM: 4,
   HULL_CORE_R: 2,
   ADV_HULL_R: 4.5,
+  /** Vertical half-extent of the level hull (core sphere + tolerance) for planning and audits. */
+  ADV_HULL_RY: 2.5,
   DODGE_BONUS: 400000,
   DODGE_DIST: 6,
   // start

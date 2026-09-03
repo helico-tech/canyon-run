@@ -7,7 +7,8 @@
 // pitch and yaw commands, and the plane banks into the turn so pitch authority
 // is available for turning.
 import { spineAt } from '../terrain/field.ts';
-import { clamp } from '../terrain/noise.ts';
+import { AdversaryScratch, advPoseAt, createPose, hullClearance } from './adversaries.ts';
+import { clamp, smoothstep } from '../terrain/noise.ts';
 import { createSpine } from '../terrain/spine.ts';
 import { C } from './constants.ts';
 import type { InputFrame } from './input.ts';
@@ -33,7 +34,20 @@ export interface PilotOptions {
   kBank?: number;
   /** Biome mode of the world being flown (must match the state). */
   mode?: number;
+  /** Predictive lateral offset planner around adversary stations (default on). */
+  dodge?: boolean;
 }
+
+/** Nine literal candidate offsets (unit): centre and eight directions. */
+const CAND = new Float64Array([
+  0, 0, 1, 0, 0.7071, 0.7071, 0, 1, -0.7071, 0.7071, -1, 0, -0.7071, -0.7071, 0, -1, 0.7071,
+  -0.7071,
+]);
+const DODGE_HORIZON = 420;
+const DODGE_SETTLE = 160;
+const DODGE_WINDOW = 30;
+const DODGE_WINDOW_STEP = 5;
+const PERIOD_SAMPLES = 24;
 
 export function createPilot(seed: number, opts: PilotOptions = {}): (s: SimState) => InputFrame {
   const lookahead = opts.lookahead ?? 60;
@@ -43,8 +57,12 @@ export function createPilot(seed: number, opts: PilotOptions = {}): (s: SimState
   const kTurn = opts.kTurn ?? 5;
   const kBank = opts.kBank ?? 1.5;
   const biomeMode = opts.mode ?? 0;
+  const dodge = opts.dodge ?? true;
+  const adv = new AdversaryScratch(seed, biomeMode);
+  const advPose = createPose();
   const rng = sfc32Seed((seed ^ 0xa5a5a5a5) >>> 0);
   const sp = createSpine();
+  const stationSpine = createSpine();
   const b = new Float64Array(9);
   let keys = mode === 'full' ? KEY.THR_UP : mode === 'idle' ? KEY.THR_DOWN : 0;
   let holdLeft = 0;
@@ -67,8 +85,69 @@ export function createPilot(seed: number, opts: PilotOptions = {}): (s: SimState
     const slopeX = (sp.cx - cxBack) / (lookahead + 20);
     const slopeY = (sp.coreY - cyBack) / (lookahead + 20);
     spineAt(s.seed, s.z, sp, biomeMode);
-    const ex = sp.cx - s.x;
-    const ey = sp.coreY - s.y;
+    let tx = sp.cx;
+    let ty = sp.coreY;
+    if (dodge) {
+      // Pick the freest of nine offsets inside the core at the predicted arrival pose of the next station.
+      adv.activate(s.z);
+      let next = -1;
+      let nextZ = s.z + DODGE_HORIZON;
+      for (let i = 0; i < adv.count; i++) {
+        const st = adv.stations[i]!;
+        if (st.z > s.z + 1 && st.z < nextZ) {
+          nextZ = st.z;
+          next = i;
+        }
+      }
+      if (next >= 0) {
+        const st = adv.stations[next]!;
+        // Arrival is uncertain by a few dozen ticks (turning bleeds speed), so each
+        // candidate is scored by its worst clearance across an arrival window.
+        const eta = (st.z - s.z) / (s.speed * C.DT);
+        const reachX = st.core - C.ADV_HULL_R - 2;
+        const reachY = st.core - C.ADV_HULL_RY - 2;
+        // Offsets are around the core at the station, not the body's own centre.
+        spineAt(s.seed, st.z, stationSpine, biomeMode);
+        const coreX = stationSpine.cx;
+        const coreY = stationSpine.coreY;
+        let best = -Infinity;
+        let bx = 0;
+        let by = 0;
+        // Lanes free through the whole period win (they never flip on approach);
+        // only when none exists is a candidate scored over the arrival window.
+        for (let pass = 0; pass < 2 && best < 0; pass++) {
+          for (let k = 0; k < 9; k++) {
+            const ox = CAND[k * 2]! * reachX;
+            const oy = CAND[k * 2 + 1]! * reachY;
+            let worst = Infinity;
+            if (pass === 0) {
+              for (let m = 0; m < PERIOD_SAMPLES; m++) {
+                advPoseAt(st, (m * st.period) / PERIOD_SAMPLES, st.z, advPose);
+                const sd = hullClearance(st, advPose, coreX + ox, coreY + oy, st.z);
+                if (sd < worst) worst = sd;
+              }
+            } else {
+              for (let dt = -DODGE_WINDOW; dt <= DODGE_WINDOW; dt += DODGE_WINDOW_STEP) {
+                advPoseAt(st, s.tick + eta + dt, st.z, advPose);
+                const sd = hullClearance(st, advPose, coreX + ox, coreY + oy, st.z);
+                if (sd < worst) worst = sd;
+              }
+            }
+            const clear = worst - 0.05 * (Math.abs(ox) + Math.abs(oy));
+            if (clear > best) {
+              best = clear;
+              bx = ox;
+              by = oy;
+            }
+          }
+        }
+        const w = 1 - smoothstep(DODGE_SETTLE, DODGE_HORIZON, st.z - s.z);
+        tx += bx * w;
+        ty += by * w;
+      }
+    }
+    const ex = tx - s.x;
+    const ey = ty - s.y;
     let dX = slopeX + clamp(ex * kLat, -0.5, 0.5);
     let dY = slopeY + clamp(ey * kLat, -0.5, 0.5);
     let dZ = 1;

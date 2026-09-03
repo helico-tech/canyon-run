@@ -1,0 +1,37 @@
+seed  mode                  stations  failures  worstFreeCells  worstStation
+1     auto                        13         0              76  0/3 z 7453
+1     cave                        20         0             162  2/1 z 7738
+1     crystal-spires               5         0             210  2/1 z 9153
+1     lava-rift                   14         0              42  0/2 z 1537
+1     hoodoo-desert               21         0              52  0/3 z 7555
+1     floating-archipelago        14         0              14  2/1 z 8936
+1     trench-run                  18         0             168  0/5 z 860
+2     auto                        16         0              52  0/3 z 7748
+2     cave                        20         0             166  2/1 z 8000
+2     crystal-spires              14         0             216  2/1 z 962
+2     lava-rift                    9         0              42  0/2 z 5211
+2     hoodoo-desert               20         0              52  0/3 z 7554
+2     floating-archipelago        13         0             130  2/1 z 8633
+2     trench-run                  20         0             168  3/0 z 740
+3     auto                        20         0              42  0/2 z 9021
+3     cave                        17         0             142  2/1 z 7508
+3     crystal-spires              11         0             182  2/1 z 9000
+3     lava-rift                   12         0              42  0/2 z 4174
+3     hoodoo-desert               23         0              52  0/3 z 7648
+3     floating-archipelago        14         0              14  2/1 z 8787
+3     trench-run                  17         0             168  3/0 z 723
+4     auto                        15         0              14  2/1 z 9258
+5     auto                        14         0              52  0/3 z 7746
+6     auto                        19         0              76  0/3 z 7858
+7     auto                        12         0             104  0/3 z 7910
+8     auto                        14         0              52  0/2 z 3011
+behavioural check: dodging pilot at full throttle
+seed 1: alive 1 z 10001 ticks 3588 dodged 1 score 19401187
+seed 2: alive 1 z 10001 ticks 3587 dodged 1 score 17788120
+seed 3: alive 1 z 10000 ticks 3587 dodged 0 score 19279044
+seed 4: alive 1 z 10002 ticks 3588 dodged 2 score 20663823
+seed 5: alive 1 z 10001 ticks 3584 dodged 2 score 17217604
+seed 6: alive 1 z 10002 ticks 3589 dodged 0 score 18931431
+seed 7: alive 1 z 10002 ticks 3588 dodged 1 score 16541669
+seed 8: alive 1 z 10002 ticks 3582 dodged 1 score 22859978
+audit ok

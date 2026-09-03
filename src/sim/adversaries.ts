@@ -249,6 +249,22 @@ export function stationSD(st: Station, p: AdvPose, x: number, y: number, z: numb
 
 // ---- placement ------------------------------------------------------------------
 
+/**
+ * Clearance of the level-flight hull centred at (x, y) from a posed station:
+ * the least slack over the centre sphere and the four cross-section probes.
+ * Non-negative means the hull test would pass at this position.
+ */
+export function hullClearance(st: Station, pose: AdvPose, x: number, y: number, z: number): number {
+  let worst = stationSD(st, pose, x, y, z) - (C.HULL_CORE_R + C.HULL_TOLERANCE);
+  for (let i = 0; i < HULL_PROBES.length; i += 3) {
+    if (HULL_PROBES[i + 2] !== 0) continue; // nose and tail lie along z
+    const d =
+      stationSD(st, pose, x + HULL_PROBES[i]!, y + HULL_PROBES[i + 1]!, z) - C.HULL_TOLERANCE;
+    if (d < worst) worst = d;
+  }
+  return worst;
+}
+
 /** Body extent from its centre in the cross-section (for the off-core rule and reach). */
 function bodyRadius(shape: number, r: number, len: number): number {
   if (shape === SHAPE_RING) return len + r;
@@ -278,7 +294,7 @@ export function decodeStation(
   const z = (gz + 0.2 + 0.6 * unit01(hash2(gz, seg, seed ^ 0xad02))) * p.spacing;
   if (z < C.ADV_START || segmentAt(z).index !== seg) return false;
   let r = p.rMin + (p.rMax - p.rMin) * unit01(hash2(gz, seg, seed ^ 0xad03));
-  let len = p.lenMin + (p.lenMax - p.lenMin) * unit01(hash2(gz, seg, seed ^ 0xad04));
+  const len = p.lenMin + (p.lenMax - p.lenMin) * unit01(hash2(gz, seg, seed ^ 0xad04));
   const arch = ARCHETYPES[p.archetypes[hash2(gz, seg, seed ^ 0xad05) % p.archetypes.length]!]!;
   const shape = arch[0];
   const motion = arch[1];
@@ -313,6 +329,10 @@ export function decodeStation(
     // The hole must clear the core; before ADV_CORE_FROM the hoop cannot drift.
     if (len - r < core + 2) return false;
     if (keepCore) ax = 0;
+    // A drifting hoop's opening must still overlap the core by a full hull disc at
+    // the end of its sweep: |offset| ≤ (opening − hull) + (core − hull) − 2.
+    const reach = len - r - C.ADV_HULL_R + (core - C.ADV_HULL_R) - 2;
+    if (ax > reach) ax = reach < 0 ? 0 : reach;
     ay = 0;
   } else if (motion === MOTION_ORBIT) {
     // Orbit around the core outside it: radius ≥ core + body + 2.
@@ -351,13 +371,23 @@ export function decodeStation(
       }
     }
     if (!placed) {
-      if (seg === 0) return false;
-      // Crossing the core: the body must be thin enough to leave a hull-sized disc beside it.
-      const thin = core - 2 * C.ADV_HULL_R - 0.5;
+      // Crossing the core: only a non-spinning body thin enough in y to leave a
+      // 3 u lane for the hull above or below it (the hull is 8 u wide, under 3 u tall).
+      if (seg === 0 || arch[2] !== 0) return false;
+      const thin = core - 2 * C.ADV_HULL_RY - 3;
       if (thin < 1.5) return false;
+      if (r > thin) r = thin;
       if (motion === MOTION_SWEEP_Y) {
-        if (len > thin) len = thin;
-      } else if (r > thin) r = thin;
+        // A press: it dips into the core from the roomier side and always leaves a
+        // 3 u lane on the far side, so ducking it is possible at every tick.
+        const lane = 2 * C.ADV_HULL_RY + 3;
+        const fromAbove = yHi - sp.coreY >= sp.coreY - yLo;
+        const inner = sp.coreY + (fromAbove ? lane + r - core : core - lane - r);
+        const outer = sp.coreY + (fromAbove ? core + 2 + r : -core - 2 - r);
+        if (fromAbove ? outer > yHi : outer < yLo) return false;
+        cy = (inner + outer) * 0.5;
+        ay = (outer > inner ? outer - inner : inner - outer) * 0.5;
+      }
     }
   }
   out.id = gz;

@@ -12,6 +12,8 @@ Everything is a literal table indexed by the segment (hub 1200 u, special
 | feature probability × (cap 0.95) | 0.5 | 0.65 | 0.8 | 0.9 | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 | 1.5 |
 | roughness × (ridges, detail) | 0.7 | 0.8 | 0.9 | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 | 1.5 | 1.6 |
 | speed floor (u/s) | 50 | 54 | 58 | 62 | 66 | 70 | 74 | 78 | 82 | 86 → 90 |
+| adversary probability × | 0.5 | 0.65 | 0.8 | 0.9 | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 | 1.5 |
+| adversary speed × (period ÷) | 0.7 | 0.8 | 0.9 | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 | 1.5 | 1.6 |
 
 The core tube radius is never scaled, so every segment stays flyable. Blends
 lerp the two segments' scaled parameters, so the difficulty step is as smooth

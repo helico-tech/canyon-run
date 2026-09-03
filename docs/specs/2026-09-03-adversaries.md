@@ -76,9 +76,13 @@ edge glows react.
 ## 5. Fairness audit and pilot
 
 `tools/adversary-audit.ts`: per station, speed bound (≤ 1.5 u per tick,
-thickness ≥ 4 u), static corridor (a free disc of radius 4.5 inside the core
-at every tick of a period) and reachable corridor (dilation by 1 u per tick,
-from every phase). Then the dodging pilot flies seeds 1–8 at full throttle to
+depth ≥ 2 u along z), static corridor (a position inside the core where the
+level five-probe hull is clear, at every tick of a period) and reachable
+corridor (dilation by 1 u per tick, from every phase).
+> **AMENDED 2026-09-03 (CR-0033):** first written as "a free disc of radius
+> 4.5 and thickness ≥ 4 u"; the disc over-constrained the vertical (the hull
+> is 8 u wide and under 3 u tall) and the thickness rule checked the wrong
+> axis. Then the dodging pilot flies seeds 1–8 at full throttle to
 10 000 u and must survive. A short version runs under Vitest.
 
 Pilot planner: nine literal candidate offsets inside the core, scored by the

@@ -29,6 +29,7 @@ CLOSE    = a pass with near < 3 u for ≥ 5 ticks that then ends, at speed facto
 SO CLOSE = the same pass with a minimum distance under 1.5 u                            +750 000
 THREADED = rock within 6 u of both lateral probes (±8 u) for 3 ticks                   +500 000
 GATE     = crossing a segment boundary                                                +1 500 000
+DODGED   = crossing an adversary station's plane at speed with a body within 6 u      +400 000
 ```
 
 Events other than GATE share a 36-tick cooldown. The last event (`eventId`,
