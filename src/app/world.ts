@@ -52,6 +52,7 @@ export class World {
     triangles: number;
     pending: number;
     slabs: number;
+    workers: number;
   } {
     const t = this.terrain.stats();
     return {
@@ -61,6 +62,7 @@ export class World {
       triangles: this.renderer.triangleCount(),
       pending: t.pending,
       slabs: t.resident,
+      workers: this.terrain.workerTotal,
     };
   }
 

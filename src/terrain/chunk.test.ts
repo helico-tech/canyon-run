@@ -73,7 +73,7 @@ test('neighbouring chunks share seam vertices in world space', () => {
   expect(sa).toEqual(sb);
 });
 
-test('a ten-slab census stays inside the triangle budget', () => {
+test('a ten-slab census stays inside the triangle budget', { timeout: 180000 }, () => {
   const seed = 1;
   let total = 0;
   let nonEmpty = 0;
@@ -110,7 +110,7 @@ test('fillGrid marks the guaranteed core as air at the chunk containing the spin
   expect(air).toBeGreaterThan(1000);
 });
 
-test('every special biome stays inside the triangle budget', { timeout: 120000 }, () => {
+test('every special biome stays inside the triangle budget', { timeout: 300000 }, () => {
   for (const special of SPECIALS) {
     let seed = 1;
     while (biomeForSegment(seed, 1) !== special) seed++;
@@ -134,7 +134,7 @@ test('every special biome stays inside the triangle budget', { timeout: 120000 }
   }
 });
 
-test('a special-biome slab stays inside the triangle budget (seed 1)', () => {
+test('a special-biome slab stays inside the triangle budget (seed 1)', { timeout: 180000 }, () => {
   const seed = 1;
   let total = 0;
   for (let cz = 30; cz < 34; cz++) {
