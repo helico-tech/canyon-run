@@ -18,7 +18,11 @@ export class HudProbe {
     this.mode = mode;
   }
 
-  view(state: SimState, replayLabel: string | null): HudView {
+  view(
+    state: SimState,
+    replayLabel: string | null,
+    extra?: (x: number, y: number, z: number) => number,
+  ): HudView {
     const sp = spineAt(state.seed, state.z, undefined, this.mode);
     const ceiling = sp.ceilY - C.CEIL_MARGIN;
     const altitude = (state.y - sp.floorY) / (ceiling - sp.floorY);
@@ -27,11 +31,14 @@ export class HudProbe {
     basis(state.qx, state.qy, state.qz, state.qw, this.b);
     const b = this.b;
     const near = (dx: number, dy: number, dz: number): number => {
-      const d = this.sampler.density(
-        state.x + dx * PROBE_DIST,
-        state.y + dy * PROBE_DIST,
-        state.z + dz * PROBE_DIST,
-      );
+      const px = state.x + dx * PROBE_DIST;
+      const py = state.y + dy * PROBE_DIST;
+      const pz = state.z + dz * PROBE_DIST;
+      let d = this.sampler.density(px, py, pz);
+      if (extra) {
+        const e = extra(px, py, pz);
+        if (e > d) d = e;
+      }
       const g = 1 + d / GLOW_RANGE; // d = -GLOW_RANGE → 0, d = 0 → 1
       return g < 0 ? 0 : g > 1 ? 1 : g * g;
     };

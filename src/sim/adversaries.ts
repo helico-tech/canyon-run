@@ -277,8 +277,8 @@ export function decodeStation(
   if (unit01(hash2(gz, seg, seed ^ 0xad01)) > prob) return false;
   const z = (gz + 0.2 + 0.6 * unit01(hash2(gz, seg, seed ^ 0xad02))) * p.spacing;
   if (z < C.ADV_START || segmentAt(z).index !== seg) return false;
-  const r = p.rMin + (p.rMax - p.rMin) * unit01(hash2(gz, seg, seed ^ 0xad03));
-  const len = p.lenMin + (p.lenMax - p.lenMin) * unit01(hash2(gz, seg, seed ^ 0xad04));
+  let r = p.rMin + (p.rMax - p.rMin) * unit01(hash2(gz, seg, seed ^ 0xad03));
+  let len = p.lenMin + (p.lenMax - p.lenMin) * unit01(hash2(gz, seg, seed ^ 0xad04));
   const arch = ARCHETYPES[p.archetypes[hash2(gz, seg, seed ^ 0xad05) % p.archetypes.length]!]!;
   const shape = arch[0];
   const motion = arch[1];
@@ -286,16 +286,20 @@ export function decodeStation(
   const reach = body + C.ADV_CLAMP;
   if (distanceToBoundary(z) < BLEND_LENGTH * 0.5 + reach) return false;
   spineAt(seed, z, sp, mode);
-  const core = blendAt(seed, z, decodeBlend, mode).params.coreRadius;
+  const fp = blendAt(seed, z, decodeBlend, mode).params;
+  const core = fp.coreRadius;
+  // Margins follow the biome's own wall and floor noise (a noise-free trench needs almost none).
+  const wallMargin = 1.5 * fp.warpAmp + fp.ridgeAmp + fp.detailAmp + 2;
+  const floorMargin = 1.5 * fp.warpAmp + fp.floorNoiseAmp + fp.stalagmiteAmp + 4;
   const speed = tableAt(ADVERSARY_SPEED, seg);
   const basePeriod =
     p.periodMin +
     Math.floor((p.periodMax - p.periodMin + 1) * unit01(hash2(gz, seg, seed ^ 0xad06)));
   let period = Math.floor(basePeriod / speed);
   if (period < 1) period = 1;
-  const halfX0 = sp.hw - r - C.ADV_WALL_MARGIN;
+  const halfX0 = sp.hw - r - wallMargin;
   const halfX = halfX0 > 0 ? halfX0 : 0;
-  const yLo = sp.floorY + C.ADV_FLOOR_MARGIN + r;
+  const yLo = sp.floorY + floorMargin + r;
   const yHi = sp.ceilY - C.CEIL_MARGIN - r;
   const halfY0 = (yHi - yLo) * 0.5;
   const halfY = halfY0 > 0 ? halfY0 : 0;
@@ -312,32 +316,48 @@ export function decodeStation(
     ay = 0;
   } else if (motion === MOTION_ORBIT) {
     // Orbit around the core outside it: radius ≥ core + body + 2.
-    const radius = keepCore ? need : need * 0.6;
-    if (radius > halfX || radius > halfY) return false;
-    ax = radius;
-    ay = radius;
+    if (need > halfX || need > halfY) return false;
+    ax = need;
+    ay = need;
   } else if (motion === MOTION_CLOSE) {
+    // The jaws must open clearly wider than the minimum gap, or they are a wall.
+    if (2 * halfX < p.gapMin + 8) return false;
     ax = 0;
     ay = 0;
-  } else if (keepCore) {
-    // Solid bodies sit beside or above the core so their sweep never enters it.
-    const vertical = motion === MOTION_SWEEP_Y || motion === MOTION_STATIC;
-    if (vertical) {
-      // Beside the core: needs lateral room; sweeps vertically along the full height.
-      if (halfX < need) return false;
-      cx = sp.cx + (hash2(gz, seg, seed ^ 0xad08) & 1 ? need : -need);
-      if (motion === MOTION_STATIC) {
-        cy = sp.coreY;
-        ay = 0;
+  } else if (motion === MOTION_STATIC) {
+    // A spinning blade never sits on the core: it would sweep the whole disc.
+    if (halfX < need) return false;
+    cx = sp.cx + (hash2(gz, seg, seed ^ 0xad08) & 1 ? need : -need);
+    cy = sp.coreY;
+    ay = 0;
+  } else {
+    // Sweeping and bouncing bodies: beside or above the core while there is room and the
+    // segment asks for it; otherwise they cross the core (the free gap is always beside them),
+    // except in the warm-up segment where they are simply skipped.
+    let placed = false;
+    if (keepCore) {
+      if (motion === MOTION_SWEEP_Y && halfX >= need) {
+        cx = sp.cx + (hash2(gz, seg, seed ^ 0xad08) & 1 ? need : -need);
+        placed = true;
+      } else if (motion !== MOTION_SWEEP_Y) {
+        const up = sp.ceilY - C.CEIL_MARGIN - r - (sp.coreY + need);
+        const down = sp.coreY - need - (sp.floorY + floorMargin + r);
+        if (up >= 0 || down >= 0) {
+          const goUp = down < 0 || (up >= 0 && (hash2(gz, seg, seed ^ 0xad09) & 1) === 1);
+          cy = goUp ? sp.coreY + need : sp.coreY - need;
+          ay = 0;
+          placed = true;
+        }
       }
-    } else {
-      // Above (or below) the core: sweeps laterally across the full width.
-      const up = sp.ceilY - C.CEIL_MARGIN - r - (sp.coreY + need);
-      const down = sp.coreY - need - (sp.floorY + C.ADV_FLOOR_MARGIN + r);
-      if (up < 0 && down < 0) return false;
-      const goUp = down < 0 || (up >= 0 && (hash2(gz, seg, seed ^ 0xad09) & 1) === 1);
-      cy = goUp ? sp.coreY + need : sp.coreY - need;
-      ay = 0;
+    }
+    if (!placed) {
+      if (seg === 0) return false;
+      // Crossing the core: the body must be thin enough to leave a hull-sized disc beside it.
+      const thin = core - 2 * C.ADV_HULL_R - 0.5;
+      if (thin < 1.5) return false;
+      if (motion === MOTION_SWEEP_Y) {
+        if (len > thin) len = thin;
+      } else if (r > thin) r = thin;
     }
   }
   out.id = gz;

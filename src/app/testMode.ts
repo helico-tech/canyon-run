@@ -12,6 +12,14 @@ export interface GameTestApi {
   loadReplay(replay: unknown): void;
   teleport(x: number, y: number, z: number): void;
   ghost(on: boolean): void;
+  adversaries(): Array<{
+    id: number;
+    z: number;
+    shape: number;
+    motion: number;
+    x: number;
+    y: number;
+  }>;
   restart(seed?: number): void;
   replay(): unknown;
   frameHash(): string;
@@ -66,6 +74,7 @@ export function installTestApi(game: Game, canvas: HTMLCanvasElement, simVersion
     loadReplay: (replay) => game.loadReplay(replay),
     teleport: (x, y, z) => game.teleport(x, y, z),
     ghost: (on) => game.setGhost(on),
+    adversaries: () => game.adversaryList(),
     restart: (seed) => game.restart(seed),
     replay: () => game.replay({ recordedBy: 'browser' }),
     frameHash: () => game.renderer.frameHash().toString(16).padStart(8, '0'),

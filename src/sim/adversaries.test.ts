@@ -98,7 +98,6 @@ test('no station before ADV_START, inside a blend, or in a biome without adversa
   for (let i = 0; i < n; i++) {
     const st = out[i]!;
     expect(st.z).toBeGreaterThanOrEqual(C.ADV_START);
-    expect(st.seg % 2).toBe(1); // canyon hubs carry no adversaries
     const toBoundary = Math.min(
       Math.abs(st.z - SEGMENT_HUB),
       Math.abs(st.z - 3600),
@@ -109,15 +108,19 @@ test('no station before ADV_START, inside a blend, or in a biome without adversa
     expect(st.period).toBeGreaterThanOrEqual(1);
     expect(st.phase).toBeLessThan(st.period);
   }
+  // A biome without an adversary set places nothing (forced for every segment).
+  const QUIET: BiomeDef = { ...ARENA_BIOME, id: 91, name: 'quiet', adversaries: undefined };
   SPECIALS.length = 0;
-  expect(gatherStations(1, 0, 0, 12000, out)).toBe(0);
+  SPECIALS.push(QUIET);
+  expect(gatherStations(1, QUIET.id, 0, 12000, out)).toBe(0);
 });
 
-test('before segment 4 no body ever enters the core disc; motion stays under the speed cap', () => {
+test('a hull-sized free disc exists inside the core at every tick; segment 0 keeps the core clear; speed is capped', () => {
   arenaOnly();
   const out = Array.from({ length: 96 }, createStation);
   const pose = createPose();
   const prev = createPose();
+  const HULL_R = C.ADV_HULL_R;
   let checked = 0;
   for (const seed of [1, 2, 3]) {
     const n = gatherStations(seed, 0, 0, 9000, out);
@@ -127,17 +130,24 @@ test('before segment 4 no body ever enters the core disc; motion stays under the
       const sp = spineAt(seed, st.z);
       for (let t = 0; t <= st.period; t += 1) {
         advPoseAt(st, t, st.z - 50, pose);
-        // The core disc: points within core - 0.5 of the corridor centre must be outside every body.
-        for (let k = 0; k < 8; k++) {
-          const ang = (k / 8) * Math.PI * 2;
-          const px = sp.cx + Math.cos(ang) * (st.core - 0.5);
-          const py = sp.coreY + Math.sin(ang) * (st.core - 0.5);
-          expect(
-            stationSD(st, pose, px, py, st.z),
-            `${st.shape}/${st.motion} seed ${seed} z ${st.z} t ${t}`,
-          ).toBeGreaterThan(0);
+        // Candidate free-disc centres: the core centre and a ring inside the core.
+        let free = false;
+        let clearCore = stationSD(st, pose, sp.cx, sp.coreY, st.z) > 0;
+        if (stationSD(st, pose, sp.cx, sp.coreY, st.z) >= HULL_R) free = true;
+        for (let k = 0; k < 12; k++) {
+          const ang = (k / 12) * Math.PI * 2;
+          const px = sp.cx + Math.cos(ang) * (st.core - HULL_R - 0.5);
+          const py = sp.coreY + Math.sin(ang) * (st.core - HULL_R - 0.5);
+          if (stationSD(st, pose, px, py, st.z) >= HULL_R) free = true;
+          const edgeX = sp.cx + Math.cos(ang) * (st.core - 0.5);
+          const edgeY = sp.coreY + Math.sin(ang) * (st.core - 0.5);
+          if (stationSD(st, pose, edgeX, edgeY, st.z) <= 0) clearCore = false;
         }
-        expect(stationSD(st, pose, sp.cx, sp.coreY, st.z)).toBeGreaterThan(0);
+        expect(free, `${st.shape}/${st.motion} seed ${seed} z ${st.z} t ${t}: no free disc`).toBe(
+          true,
+        );
+        if (st.seg === 0)
+          expect(clearCore, `segment 0 station ${st.id} enters the core`).toBe(true);
         if (t > 0) {
           const step = Math.hypot(pose.x - prev.x, pose.y - prev.y);
           expect(step).toBeLessThanOrEqual(C.ADV_MAX_STEP + 1e-9);

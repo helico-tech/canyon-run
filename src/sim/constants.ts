@@ -54,13 +54,12 @@ export const C = Object.freeze({
   // adversaries (ADR 0007)
   ADV_START: 600,
   ADV_CLAMP: 40,
-  ADV_WALL_MARGIN: 16,
-  ADV_FLOOR_MARGIN: 6,
   ADV_MAX_STEP: 1.5,
   ADV_WINDOW: 700,
   ADV_NEAR_BAND: 37,
   ADV_CORE_FROM: 4,
   HULL_CORE_R: 2,
+  ADV_HULL_R: 4.5,
   DODGE_BONUS: 400000,
   DODGE_DIST: 6,
   // start

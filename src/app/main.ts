@@ -65,7 +65,11 @@ let hudProbe = new HudProbe(game.seed, game.biomeMode);
 let hudClock = 0;
 game.onRender = (state) => {
   hudClock += 1000 / 60;
-  hud.update(state, hudProbe.view(state, game.replayLabel), test ? hudClock : performance.now());
+  hud.update(
+    state,
+    hudProbe.view(state, game.replayLabel, (x, y, z) => game.adversaryRock(x, y, z)),
+    test ? hudClock : performance.now(),
+  );
 };
 const applySeed = (s: number, mode: number): void => {
   const name = biomeModeName(mode);

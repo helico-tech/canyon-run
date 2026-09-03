@@ -14,6 +14,7 @@ import type { Replay } from '../sim/replay.ts';
 import { checksum, cloneState, copyState, createState } from '../sim/state.ts';
 import { hex32 } from '../sim/hash.ts';
 import { basis } from '../sim/quat.ts';
+import { advPoseAt, createPose } from '../sim/adversaries.ts';
 import type { SimState } from '../sim/state.ts';
 import { step, StepScratch } from '../sim/step.ts';
 import { CANYON_PALETTE } from '../terrain/palette.ts';
@@ -180,6 +181,34 @@ export class Game {
     this.phase = 'running';
   }
 
+  /** Test hook: active adversary stations with their current poses. */
+  adversaryList(): Array<{
+    id: number;
+    z: number;
+    shape: number;
+    motion: number;
+    x: number;
+    y: number;
+  }> {
+    const adv = this.scratch.adversaries;
+    adv.activate(this.state.z);
+    const out: Array<{
+      id: number;
+      z: number;
+      shape: number;
+      motion: number;
+      x: number;
+      y: number;
+    }> = [];
+    const pose = createPose();
+    for (let i = 0; i < adv.count; i++) {
+      const st = adv.stations[i]!;
+      advPoseAt(st, this.state.tick, this.state.z, pose);
+      out.push({ id: st.id, z: st.z, shape: st.shape, motion: st.motion, x: pose.x, y: pose.y });
+    }
+    return out;
+  }
+
   /** Test hook: disables hull collision (proximity and events still run). */
   setGhost(on: boolean): void {
     this.scratch.ghost = on;
@@ -275,9 +304,26 @@ export class Game {
     };
   }
 
+  /** Adversary distance in field sign (rock > 0) at a point, from the last tick's poses. */
+  adversaryRock(x: number, y: number, z: number): number {
+    return -this.scratch.adversaries.distance(x, y, z);
+  }
+
   render(alpha = 1): void {
-    this.renderer.setAtmosphere(atmosphereAtZ(this.state.seed, this.state.z, this.state.biomeMode));
-    this.renderer.render(this.pose(alpha));
+    const a = atmosphereAtZ(this.state.seed, this.state.z, this.state.biomeMode);
+    this.renderer.setAtmosphere(a);
+    const pose = this.pose(alpha);
+    const adv = this.scratch.adversaries;
+    adv.activate(this.state.z);
+    this.renderer.setAdversaries(
+      this.state.seed,
+      this.state.biomeMode,
+      adv,
+      pose.time,
+      pose.z,
+      a.accent,
+    );
+    this.renderer.render(pose);
     this.onRender?.(this.state, alpha);
   }
 
@@ -297,6 +343,7 @@ export class Game {
       score: s.score,
       proximity: s.proximity,
       biomeMode: s.biomeMode,
+      adversaries: this.scratch.adversaries.count,
       streakTicks: s.streakTicks,
       eventId: s.eventId,
       eventPoints: s.eventPoints,

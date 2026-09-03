@@ -12,6 +12,7 @@ export class NullRenderer implements GameRenderer {
   setSeed(_seed: number): void {}
   spawnShards(): void {}
   clearShards(): void {}
+  setAdversaries(): void {}
   addChunk(chunk: ChunkMesh): void {
     this.chunks.set(`${chunk.cx},${chunk.cy},${chunk.cz}`, chunk.tris);
   }

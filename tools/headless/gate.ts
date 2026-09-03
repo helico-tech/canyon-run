@@ -76,7 +76,8 @@ export function runGates(g: GateInput): GateResult[] {
     const y = Math.floor(height / 2);
     const i = (y * width + x) * 4;
     const [r, gg, b] = [data[i]!, data[i + 1]!, data[i + 2]!];
-    const ok = Math.abs(r - 244) <= 12 && Math.abs(gg - 232) <= 12 && Math.abs(b - 255) <= 12;
+    // Bright border (the proximity glow overlay may tint it): every channel high.
+    const ok = r >= 190 && gg >= 180 && b >= 200;
     add('HUD frame drawn', ok, `altitude bar border pixel ${r},${gg},${b} at ${x},${y}`);
   }
   const last = g.frames[g.frames.length - 1];

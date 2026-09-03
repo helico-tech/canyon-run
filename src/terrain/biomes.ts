@@ -48,6 +48,22 @@ export const CANYON_BIOME: BiomeDef = Object.freeze<BiomeDef>({
     ambient: [171, 103.2, 86.4],
     ground: [140.25, 114.75, 76.5],
   },
+  adversaries: {
+    spacing: 260,
+    prob: 0.8,
+    archetypes: [3, 1],
+    rMin: 2,
+    rMax: 3.5,
+    lenMin: 17,
+    lenMax: 23,
+    hz: 1.5,
+    periodMin: 240,
+    periodMax: 420,
+    ampX: 0.5,
+    ampY: 0.3,
+    gapMin: 28,
+    closeDist: 220,
+  },
 });
 
 /** Special biomes in delivery order (registered at the bottom of this file to avoid cycles). */

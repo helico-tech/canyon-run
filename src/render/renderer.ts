@@ -9,6 +9,9 @@ import { chunkId, createTerrainMaterial, disposeMesh, toThreeMesh } from './chun
 import { Sky } from './sky.ts';
 import { Streaks } from './streaks.ts';
 import { Shards } from './shards.ts';
+import { AdversaryLayer } from './adversaries.ts';
+import type { AdversaryScratch } from '../sim/adversaries.ts';
+import type { Rgb } from '../terrain/palette.ts';
 
 export interface RendererOptions {
   width: number;
@@ -33,6 +36,14 @@ export interface GameRenderer {
     accent: [number, number, number],
   ): void;
   clearShards(): void;
+  setAdversaries(
+    seed: number,
+    mode: number,
+    adv: AdversaryScratch,
+    time: number,
+    planeZ: number,
+    accent: Rgb | undefined,
+  ): void;
   addChunk(chunk: ChunkMesh): void;
   evictBelow(minCz: number): number;
   readonly chunkCount: number;
@@ -52,6 +63,7 @@ export class Renderer implements GameRenderer {
   private readonly sky = new Sky();
   private streaks: Streaks | null = null;
   private readonly shards = new Shards();
+  private readonly adversaries = new AdversaryLayer();
   private travel = 0;
   private lastTime = Number.NaN;
   private readonly sun = new THREE.DirectionalLight(0xffffff, 2);
@@ -79,7 +91,7 @@ export class Renderer implements GameRenderer {
     this.gl.setSize(opts.width, opts.height, false);
     this.camera = new THREE.PerspectiveCamera(66, opts.width / opts.height, 0.5, 800);
     this.scene.fog = this.fog;
-    this.scene.add(this.sky.mesh, this.sun, this.hemi, this.shards.mesh);
+    this.scene.add(this.sky.mesh, this.sun, this.hemi, this.shards.mesh, this.adversaries.group);
     const ctx = this.gl.getContext();
     const dbg = ctx.getExtension('WEBGL_debug_renderer_info');
     this.info = {
@@ -108,6 +120,17 @@ export class Renderer implements GameRenderer {
 
   clearShards(): void {
     this.shards.clear();
+  }
+
+  setAdversaries(
+    seed: number,
+    mode: number,
+    adv: AdversaryScratch,
+    time: number,
+    planeZ: number,
+    accent: Rgb | undefined,
+  ): void {
+    this.adversaries.update(seed, mode, adv, time, planeZ, accent);
   }
 
   /** Installs the speed streaks for a seed (layout is seeded so frames stay deterministic). */
