@@ -29,7 +29,10 @@ export const FEATURE_ROCK = 6;
 export const FEATURE_GATE = 7;
 /** Axis-aligned rounded box (rounding 1 u): greebles, towers and beams. */
 export const FEATURE_BOX = 8;
-export const GATE_RADIUS = 3;
+export const GATE_RADIUS = 5;
+/** Sill across the floor between the pillars: half height and half depth (u). */
+export const GATE_SILL_H = 2;
+export const GATE_SILL_D = 2.5;
 export const GATE_LINTEL_DROP = 22;
 
 /** 8 tilt angles from -35° to +35° as (cos, sin) literals. */
@@ -538,5 +541,15 @@ export function gateSD(f: Feature, dx: number, dy: number, dz: number): number {
   const lx = dx < -f.big ? -f.big : dx > f.big ? f.big : dx;
   const ly = dy - f.big2;
   const lintel = Math.sqrt((dx - lx) * (dx - lx) + ly * ly + dz * dz) - f.r;
-  return pillar < lintel ? pillar : lintel;
+  // Sill: a low rounded box across the floor (the feature's y sits 4 u below the floor).
+  const qx = Math.abs(dx) - f.big;
+  const qy = Math.abs(dy - 4) - GATE_SILL_H;
+  const qz = Math.abs(dz) - GATE_SILL_D;
+  const px = qx > 0 ? qx : 0;
+  const py = qy > 0 ? qy : 0;
+  const pz = qz > 0 ? qz : 0;
+  const inner = qx > qy ? (qx > qz ? qx : qz) : qy > qz ? qy : qz;
+  const sill = Math.sqrt(px * px + py * py + pz * pz) + (inner < 0 ? inner : 0) - 0.5;
+  const frame = pillar < lintel ? pillar : lintel;
+  return frame < sill ? frame : sill;
 }
