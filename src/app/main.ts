@@ -61,7 +61,7 @@ const game = new Game(canvas, {
   workers,
   biomeMode: pendingReplay?.biomeMode ?? biomeMode,
 });
-const hud = createHud(root);
+const hud = createHud(root, { debug });
 let hudProbe = new HudProbe(game.seed, game.biomeMode);
 let hudClock = 0;
 game.onRender = (state) => {

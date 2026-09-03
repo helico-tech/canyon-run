@@ -191,6 +191,16 @@
 #hud .gate[hidden] {
   display: none;
 }
+#hud .fps {
+  position: absolute;
+  left: 24px;
+  top: 48px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+#hud .fps[hidden] {
+  display: none;
+}
 #hud .replay {
   position: absolute;
   left: 24px;

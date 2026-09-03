@@ -34,7 +34,12 @@ function el(tag: string, cls: string, text = ''): HTMLElement {
 
 export const EVENT_NAMES = ['', 'close', 'so close', 'threaded', 'gate', 'dodged'];
 
-export function createHud(parent: HTMLElement): Hud {
+export interface HudOptions {
+  /** Shows a frame-rate readout (top left) for real-display checks. */
+  debug?: boolean;
+}
+
+export function createHud(parent: HTMLElement, options: HudOptions = {}): Hud {
   const root = el('div', '');
   root.id = 'hud';
   const score = el('div', 'score');
@@ -62,6 +67,8 @@ export function createHud(parent: HTMLElement): Hud {
   const biomeEl = el('div', 'biome', '');
   const gateEl = el('div', 'gate', '');
   gateEl.hidden = true;
+  const fpsEl = el('div', 'fps', '');
+  fpsEl.hidden = options.debug !== true;
   const replay = el('div', 'replay', 'replay');
   replay.hidden = true;
   const dead = el('div', 'dead', 'crashed');
@@ -81,6 +88,7 @@ export function createHud(parent: HTMLElement): Hud {
     seedEl,
     biomeEl,
     gateEl,
+    fpsEl,
     replay,
     dead,
     callouts,
@@ -91,6 +99,8 @@ export function createHud(parent: HTMLElement): Hud {
   const b = new Float64Array(9);
   let lastText = -Infinity;
   let lastEventTick = -1;
+  let lastFrameMs = -Infinity;
+  let frameInterval = 1000 / 60;
   let wasAlive = true;
   return {
     root,
@@ -99,6 +109,11 @@ export function createHud(parent: HTMLElement): Hud {
         biome === 'auto' ? `seed ${formatSeed(seed)}` : `seed ${formatSeed(seed)} · ${biome}`;
     },
     update(state, view, nowMs) {
+      if (lastFrameMs > -Infinity && nowMs > lastFrameMs) {
+        // Exponential average of the frame interval; 1/interval is the readout.
+        frameInterval += (nowMs - lastFrameMs - frameInterval) * 0.1;
+      }
+      lastFrameMs = nowMs;
       const tV = Math.min(
         Math.max((state.speed - C.MIN_SPEED) / (C.MAX_SPEED - C.MIN_SPEED), 0),
         1,
@@ -143,6 +158,7 @@ export function createHud(parent: HTMLElement): Hud {
         speedValue.textContent = `${Math.round(state.speed)}`;
         if (view.replayLabel !== null) replay.textContent = view.replayLabel;
         biomeEl.textContent = view.biome;
+        if (!fpsEl.hidden) fpsEl.textContent = `${Math.round(1000 / frameInterval)} fps`;
         gateEl.hidden = view.gateIn < 0;
         if (view.gateIn >= 0) gateEl.textContent = `gate in ${Math.round(view.gateIn)} u`;
       }

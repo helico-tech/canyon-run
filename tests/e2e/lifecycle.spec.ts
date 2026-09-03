@@ -79,3 +79,19 @@ test('settings on the start screen do not start a run and persist across a reloa
     await server.close();
   }
 });
+
+test('debug mode shows a frame-rate readout once flying', async ({ page }) => {
+  const server = await serveStatic(path.join(root, 'dist'));
+  try {
+    await page.goto(`${server.url}/?debug=1&seed=1`);
+    await page.waitForFunction(() => window.__game?.ready === true, undefined, { timeout: 60000 });
+    await page.locator('.screen.start .cta').click();
+    await expect(page.locator('#hud .fps')).toHaveText(/^\d+ fps$/, { timeout: 10000 });
+    // Without debug the element exists but stays hidden (no test API on this page).
+    await page.goto(`${server.url}/?seed=1`);
+    await page.locator('#hud').waitFor({ state: 'attached', timeout: 60000 });
+    await expect(page.locator('#hud .fps')).toBeHidden();
+  } finally {
+    await server.close();
+  }
+});
