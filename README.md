@@ -85,6 +85,13 @@ pnpm sim:regold    # regenerate golden replays after an intentional sim change (
 pnpm headless:golden   # regenerate golden frame hashes after an intentional visual change
 ```
 
+## Known limitations
+
+All rendering evidence comes from headless SwiftShader on a VM without a GPU;
+frame rate and pointer-lock feel on real hardware are unverified (see
+`docs/issues/`, which also lists the polish backlog: settings, audio, a wasm
+field port, gate visibility, HUD biome name).
+
 ## Repository layout
 
 ```
