@@ -1,11 +1,18 @@
 import { expect, test } from 'vitest';
 import { sfc32Next, sfc32Seed } from './prng.ts';
 import { createPilot } from './pilot.ts';
-import { decodeRuns, encodeRuns, recordRun, simulateTicks, validateReplay } from './replay.ts';
+import {
+  decodeRuns,
+  encodeRuns,
+  recordRun,
+  replaySource,
+  simulateTicks,
+  validateReplay,
+} from './replay.ts';
 import { checksum } from './state.ts';
 import { hex32 } from './hash.ts';
 import type { Replay } from './replay.ts';
-import { KEY } from './input.ts';
+import { KEY, ZERO_INPUT } from './input.ts';
 
 test('RLE codec round-trips 7200 random frames and merges identical runs', () => {
   const rng = sfc32Seed(1);
@@ -88,4 +95,13 @@ test('the biome mode is part of the state checksum and the replay header', () =>
   expect(validateReplay(forced.replay).verdict).toBe('ok');
   // A file claiming another mode diverges at the first checkpoint.
   expect(validateReplay({ ...forced.replay, biomeMode: 0 }).verdict).toBe('checkpoint-mismatch');
+});
+
+test('replaySource feeds exactly ticks inputs, then zero input, even with trailing runs', () => {
+  const { replay: rec } = recordRun(5, 120, createPilot(5, { throttle: 'full' }));
+  const r: Replay = { ...rec, runs: [...rec.runs, [600, KEY.PITCH_DOWN, 3, -2]] };
+  const src = replaySource(r);
+  const fromRuns = [...decodeRuns(rec.runs)];
+  for (let i = 0; i < r.ticks; i++) expect(src()).toEqual(fromRuns[i]);
+  for (let i = 0; i < 5; i++) expect(src()).toEqual(ZERO_INPUT);
 });

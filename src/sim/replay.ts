@@ -3,7 +3,7 @@
 import { C, hashConstants } from './constants.ts';
 import { hex32 } from './hash.ts';
 import type { InputFrame } from './input.ts';
-import { KEY_MASK } from './input.ts';
+import { KEY_MASK, ZERO_INPUT } from './input.ts';
 import type { SimState } from './state.ts';
 import { checksum, createState } from './state.ts';
 import { step, StepScratch } from './step.ts';
@@ -45,6 +45,22 @@ export function encodeRuns(inputs: Iterable<InputFrame>): Run[] {
 
 export function* decodeRuns(runs: Iterable<Run>): Generator<InputFrame> {
   for (const [n, keys, dx, dy] of runs) for (let i = 0; i < n; i++) yield { keys, dx, dy };
+}
+
+/**
+ * Input source for playback: the replay's inputs for exactly `ticks` frames,
+ * then zero input, mirroring what the validator simulates (trailing runs are
+ * never played).
+ */
+export function replaySource(r: Replay): () => InputFrame {
+  const frames = decodeRuns(r.runs);
+  let fed = 0;
+  return () => {
+    if (fed >= r.ticks) return ZERO_INPUT;
+    fed++;
+    const next = frames.next();
+    return next.done ? ZERO_INPUT : next.value;
+  };
 }
 
 export function runsLength(runs: Run[]): number {

@@ -8,9 +8,8 @@ import type { GameRenderer } from '../render/renderer.ts';
 import { NullRenderer } from '../render/nullRenderer.ts';
 import { C } from '../sim/constants.ts';
 import type { InputFrame } from '../sim/input.ts';
-import { ZERO_INPUT } from '../sim/input.ts';
 import { createPilot } from '../sim/pilot.ts';
-import { decodeRuns, isReplay, Recorder } from '../sim/replay.ts';
+import { replaySource, isReplay, Recorder } from '../sim/replay.ts';
 import type { Replay } from '../sim/replay.ts';
 import { checksum, cloneState, copyState, createState } from '../sim/state.ts';
 import { hex32 } from '../sim/hash.ts';
@@ -120,13 +119,9 @@ export class Game {
         `replay biome mode ${replay.biomeMode ?? 0} != game mode ${this.state.biomeMode}`,
       );
     }
-    const frames = decodeRuns(replay.runs);
     this.replayLabel = `replay ${replay.ticks} ticks`;
     this.forcedInput = null;
-    this.source = () => {
-      const next = frames.next();
-      return next.done ? ZERO_INPUT : next.value;
-    };
+    this.source = replaySource(replay);
   }
 
   /** One tick with the given input; the render interpolates from the previous state. */
