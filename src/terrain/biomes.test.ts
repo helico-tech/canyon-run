@@ -127,10 +127,9 @@ test('every registered special keeps the core air and the roof rock across its s
       for (let z = SEGMENT_HUB - 300; z <= SEGMENT_HUB + SEGMENT_SPECIAL + 300; z += 41) {
         const sp = spineAt(seed, z);
         expect(density(seed, sp.cx, sp.coreY, z), `${special.name} core at z=${z}`).toBeLessThan(0);
-        expect(
-          density(seed, sp.cx, sp.ceilY + 24, z),
-          `${special.name} roof at z=${z}`,
-        ).toBeGreaterThan(0);
+        if (special.params.roofOpen === 0) {
+          expect(density(seed, sp.cx, sp.ceilY + 24, z), `${special.name} roof`).toBeGreaterThan(0);
+        }
       }
     }
   }

@@ -17,6 +17,22 @@ uniform vec3 uHorizon;
 uniform vec3 uZenith;
 uniform vec3 uSun;
 uniform vec3 uSunDir;
+uniform float uStars;
+float hash13(vec3 p) {
+  p = fract(p * 0.1031);
+  p += dot(p, p.zyx + 31.32);
+  return fract((p.x + p.y) * p.z);
+}
+// Hashed starfield: one cell per ~1.2 degrees, a star in ~8 % of cells.
+float stars(vec3 d) {
+  vec3 cell = floor(d * 48.0);
+  float h = hash13(cell);
+  if (h < 0.92) return 0.0;
+  vec3 centre = normalize((cell + 0.5 + vec3(hash13(cell + 1.0), hash13(cell + 2.0), hash13(cell + 3.0)) * 0.6 - 0.3) / 48.0);
+  float dist = length(d - centre);
+  float size = 0.004 + 0.006 * hash13(cell + 7.0);
+  return smoothstep(size, 0.0, dist) * (0.5 + 0.5 * hash13(cell + 9.0));
+}
 float bayer4(vec2 p) {
   vec2 q = floor(mod(p, 4.0));
   int idx = int(q.x + 4.0 * q.y);
@@ -33,6 +49,7 @@ void main() {
   float disc = smoothstep(0.9985, 0.9995, c);
   float halo = pow(max(c, 0.0), 64.0) * 0.35;
   col = mix(col, uSun, disc) + uSun * halo;
+  if (uStars > 0.0) col += uStars * stars(d) * (1.0 - t * 0.2);
   col += (bayer4(gl_FragCoord.xy) - 0.5) / 48.0;
   gl_FragColor = vec4(col, 1.0);
 }`;
@@ -44,6 +61,7 @@ export class Sky {
     uZenith: THREE.IUniform<THREE.Vector3>;
     uSun: THREE.IUniform<THREE.Vector3>;
     uSunDir: THREE.IUniform<THREE.Vector3>;
+    uStars: THREE.IUniform<number>;
   };
 
   constructor() {
@@ -52,6 +70,7 @@ export class Sky {
       uZenith: { value: new THREE.Vector3(0.18, 0.1, 0.3) },
       uSun: { value: new THREE.Vector3(1, 0.9, 0.66) },
       uSunDir: { value: new THREE.Vector3(0.5, 0.57, 0.65) },
+      uStars: { value: 0 },
     };
     const mat = new THREE.ShaderMaterial({
       vertexShader: VERT,
@@ -72,6 +91,7 @@ export class Sky {
     this.uniforms.uZenith.value.set(...rgbToFloat(a.zenith));
     this.uniforms.uSun.value.set(...rgbToFloat(a.sun));
     this.uniforms.uSunDir.value.set(a.sunDir[0], a.sunDir[1], a.sunDir[2]).normalize();
+    this.uniforms.uStars.value = a.stars ?? 0;
   }
 
   follow(x: number, y: number, z: number): void {

@@ -15,6 +15,7 @@ export interface Atmosphere {
   ambient: Rgb;
   ground: Rgb;
   accent?: Rgb;
+  stars?: number;
 }
 
 export const SUN_DIR: readonly [number, number, number] = [0.4965, 0.5736, 0.6516];
@@ -51,5 +52,6 @@ export function atmosphereAtZ(seed: number, z: number): Atmosphere {
     ambient: a.ambient,
     ground: a.ground,
     accent: a.accent,
+    stars: a.stars,
   };
 }

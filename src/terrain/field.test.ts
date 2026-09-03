@@ -4,7 +4,7 @@ import { baseDensity, density, FieldSampler, spineAt } from './field.ts';
 import { sfc32NextUnit, sfc32Seed } from '../sim/prng.ts';
 import { CANYON, shellBound } from './params.ts';
 import { spine } from './spine.ts';
-import { segmentAt } from './biomes.ts';
+import { blendAt, segmentAt } from './biomes.ts';
 
 const rng = sfc32Seed(2026);
 const rand = (lo: number, hi: number): number => lo + (hi - lo) * sfc32NextUnit(rng);
@@ -15,7 +15,8 @@ test('the core tube is always air and the roof is always rock', () => {
     const z = rand(-5000, 50000);
     const sp = spineAt(seed, z);
     expect(density(seed, sp.cx, sp.coreY, z)).toBeLessThan(0);
-    expect(density(seed, sp.cx, sp.ceilY + 20, z)).toBeGreaterThan(0);
+    if (blendAt(seed, z).params.roofOpen === 0)
+      expect(density(seed, sp.cx, sp.ceilY + 20, z)).toBeGreaterThan(0);
     expect(density(seed, sp.cx, sp.floorY - 20, z)).toBeGreaterThan(0);
     // Side rock only in hub segments away from blends: special biomes may carve side tunnels.
     const seg = segmentAt(z);

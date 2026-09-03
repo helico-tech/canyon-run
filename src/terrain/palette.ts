@@ -15,6 +15,8 @@ export interface BiomePalette {
   bands: number;
   /** Crystal face colours by tint index (biomes with crystals). */
   crystals?: readonly Rgb[];
+  /** Starfield intensity on the sky dome (0 = none). */
+  stars?: number;
 }
 
 export const CANYON_PALETTE: BiomePalette = Object.freeze<BiomePalette>({

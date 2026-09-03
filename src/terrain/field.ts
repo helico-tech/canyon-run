@@ -28,7 +28,7 @@ export function baseDensity(p: FieldParams, sp: Spine, x: number, y: number): nu
   const h = (y - sp.floorY) / p.height;
   const sdWall = Math.abs(x - sp.cx) - sp.hw * profile(p, h);
   const sdFloor = sp.floorY - y;
-  const sdCeil = y - sp.ceilY;
+  const sdCeil = p.roofOpen > 0 ? -1e9 : y - sp.ceilY;
   const slot = Math.max(sdWall, sdFloor, sdCeil);
   return p.tubeness > 0 ? lerp(slot, tubeDistance(p, sp, x, y), p.tubeness) : slot;
 }
@@ -62,7 +62,10 @@ export function biomeDensity(
   const ff = 1 / p.floorNoiseLen;
   let sdFloor = sp.floorY - py + p.floorNoiseAmp * fbm2(px * ff, z * ff, seed ^ 14, p.heightOct);
   const cf = 1 / p.ceilNoiseLen;
-  let sdCeil = py - sp.ceilY + p.ceilNoiseAmp * fbm2(px * cf, z * cf, seed ^ 15, p.heightOct);
+  let sdCeil =
+    p.roofOpen > 0
+      ? -1e9
+      : py - sp.ceilY + p.ceilNoiseAmp * fbm2(px * cf, z * cf, seed ^ 15, p.heightOct);
   if (p.stalactiteAmp > 0 || p.stalagmiteAmp > 0) {
     // Sharp spikes: a ridged field cubed, sampled in the horizontal plane only.
     const sf = 1 / p.spikeLen;

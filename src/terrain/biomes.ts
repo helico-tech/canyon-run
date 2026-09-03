@@ -190,7 +190,7 @@ export function mixRgb(a: Rgb, b: Rgb, t: number): Rgb {
 export function atmosphereAt(
   seed: number,
   z: number,
-): { horizon: Rgb; zenith: Rgb; sun: Rgb; accent: Rgb } & BiomeAtmosphere {
+): { horizon: Rgb; zenith: Rgb; sun: Rgb; accent: Rgb; stars: number } & BiomeAtmosphere {
   const bl = blendAt(seed, z);
   const pa = bl.a.palette;
   const pb = bl.b.palette;
@@ -202,6 +202,7 @@ export function atmosphereAt(
     zenith: mixRgb(pa.skyTop, pb.skyTop, t),
     sun: mixRgb(pa.sun, pb.sun, t),
     accent: mixRgb(pa.accent, pb.accent, t),
+    stars: lerp(pa.stars ?? 0, pb.stars ?? 0, t),
     fogDensity: lerp(aa.fogDensity, ab.fogDensity, t),
     sunIntensity: lerp(aa.sunIntensity, ab.sunIntensity, t),
     hemiIntensity: lerp(aa.hemiIntensity, ab.hemiIntensity, t),
@@ -216,4 +217,5 @@ import { SPIRES_BIOME } from './biomes/spires.ts';
 import { LAVA_BIOME } from './biomes/lava.ts';
 import { HOODOO_BIOME } from './biomes/hoodoo.ts';
 import { ARCHIPELAGO_BIOME } from './biomes/archipelago.ts';
-SPECIALS.push(CAVE_BIOME, SPIRES_BIOME, LAVA_BIOME, HOODOO_BIOME, ARCHIPELAGO_BIOME);
+import { TRENCH_BIOME } from './biomes/trench.ts';
+SPECIALS.push(CAVE_BIOME, SPIRES_BIOME, LAVA_BIOME, HOODOO_BIOME, ARCHIPELAGO_BIOME, TRENCH_BIOME);

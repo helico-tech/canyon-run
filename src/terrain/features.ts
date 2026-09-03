@@ -27,6 +27,8 @@ export const FEATURE_MESA = 5;
 export const FEATURE_ROCK = 6;
 /** Biome gate: two pillars and a lintel at a segment boundary, accent coloured. */
 export const FEATURE_GATE = 7;
+/** Axis-aligned rounded box (rounding 1 u): greebles, towers and beams. */
+export const FEATURE_BOX = 8;
 export const GATE_RADIUS = 3;
 export const GATE_LINTEL_DROP = 22;
 
@@ -88,6 +90,9 @@ function boulderReach(p: FieldParams): number {
 }
 function archReach(p: FieldParams): number {
   return p.halfWidth * (1 + p.widthVar) * 1.1 + p.archRMax + FEATURE_CLAMP;
+}
+function boxReach(p: FieldParams): number {
+  return Math.max(p.boxHalfMax, p.boxHeightMax, p.halfWidth * 1.5 + p.beamHalf) + FEATURE_CLAMP;
 }
 function crystalReach(p: FieldParams): number {
   return p.crystalHMax + p.crystalRMax + FEATURE_CLAMP;
@@ -278,6 +283,100 @@ export function gatherFeatures(
       seg = segmentAt(gz + 1);
     }
   }
+  if (p.boxFloorProb > 0 || p.boxWallProb > 0 || p.towerProb > 0 || p.beamProb > 0) {
+    const reach = boxReach(p);
+    const box = (x: number, y: number, z: number, hx: number, hy: number, hz: number): void => {
+      const fr = Math.max(hx, hy, hz) + FEATURE_CLAMP;
+      if (x + fr < x0 || x - fr > x1 || z + fr < z0 || z - fr > z1) return;
+      if (inClearZone(z)) return;
+      const f = feature(FEATURE_BOX, x, y, z, hx, hy, fr);
+      f.big2 = hz;
+      out.push(f);
+    };
+    if (p.boxFloorProb > 0 || p.towerProb > 0) {
+      const sF = p.boxFloorSpacing;
+      const [gx0, gx1] = cellRange(x0, x1, reach, sF);
+      const [gz0, gz1] = cellRange(z0, z1, reach, sF);
+      for (let gz = gz0; gz <= gz1; gz++) {
+        for (let gx = gx0; gx <= gx1; gx++) {
+          const roll = unit01(hash2(gx, gz, seed ^ 0xc111));
+          if (roll > p.boxFloorProb) continue;
+          const bx = (gx + 0.2 + 0.6 * unit01(hash2(gx, gz, seed ^ 0xc222))) * sF;
+          const bz = (gz + 0.2 + 0.6 * unit01(hash2(gx, gz, seed ^ 0xc333))) * sF;
+          spine(seed, bz, p, sp);
+          if (Math.abs(bx - sp.cx) > sp.hw * 0.8) continue;
+          const hx =
+            p.boxHalfMin + (p.boxHalfMax - p.boxHalfMin) * unit01(hash2(gx, gz, seed ^ 0xc444));
+          const hz =
+            p.boxHalfMin + (p.boxHalfMax - p.boxHalfMin) * unit01(hash2(gx, gz, seed ^ 0xc555));
+          const hy =
+            p.boxHeightMin +
+            (p.boxHeightMax - p.boxHeightMin) * unit01(hash2(gx, gz, seed ^ 0xc666));
+          box(bx, sp.floorY - 2 + hy, bz, hx, hy + 2, hz);
+        }
+      }
+    }
+    if (p.towerProb > 0) {
+      const sT = p.towerSpacing;
+      const [gx0, gx1] = cellRange(x0, x1, reach, sT);
+      const [gz0, gz1] = cellRange(z0, z1, reach, sT);
+      for (let gz = gz0; gz <= gz1; gz++) {
+        for (let gx = gx0; gx <= gx1; gx++) {
+          if (unit01(hash2(gx, gz, seed ^ 0xd111)) > p.towerProb) continue;
+          const tx = (gx + 0.25 + 0.5 * unit01(hash2(gx, gz, seed ^ 0xd222))) * sT;
+          const tz = (gz + 0.25 + 0.5 * unit01(hash2(gx, gz, seed ^ 0xd333))) * sT;
+          spine(seed, tz, p, sp);
+          // Towers hug the walls so the centre stays flyable.
+          const side = hash2(gx, gz, seed ^ 0xd444) & 1 ? 1 : -1;
+          const x = sp.cx + side * sp.hw * (0.55 + 0.25 * unit01(hash2(gx, gz, seed ^ 0xd555)));
+          const half = 3 + 2 * unit01(hash2(gx, gz, seed ^ 0xd666));
+          const height = 0.35 * p.height + 0.3 * p.height * unit01(hash2(gx, gz, seed ^ 0xd777));
+          void tx;
+          box(x, sp.floorY - 2 + height * 0.5, tz, half, height * 0.5 + 2, half);
+        }
+      }
+    }
+    if (p.boxWallProb > 0) {
+      const sW = p.boxWallSpacing;
+      const [gx0, gx1] = cellRange(x0, x1, reach, sW);
+      const [gz0, gz1] = cellRange(z0, z1, reach, sW);
+      for (let gz = gz0; gz <= gz1; gz++) {
+        for (let gx = gx0; gx <= gx1; gx++) {
+          if (unit01(hash2(gx, gz, seed ^ 0xe111)) > p.boxWallProb) continue;
+          const wz = (gz + 0.2 + 0.6 * unit01(hash2(gx, gz, seed ^ 0xe222))) * sW;
+          spine(seed, wz, p, sp);
+          // Wall cells: only cells straddling a wall grow greebles (one per wall per cell row).
+          const cellX = (gx + 0.5) * sW;
+          const rel = (cellX - sp.cx) / sp.hw;
+          if (Math.abs(rel) < 0.7 || Math.abs(rel) > 1.3) continue;
+          const side = rel > 0 ? 1 : -1;
+          const hx =
+            p.boxHalfMin + (p.boxHalfMax - p.boxHalfMin) * unit01(hash2(gx, gz, seed ^ 0xe333));
+          const hy =
+            p.boxHalfMin + (p.boxHalfMax - p.boxHalfMin) * unit01(hash2(gx, gz, seed ^ 0xe444));
+          const hz =
+            p.boxHalfMin + (p.boxHalfMax - p.boxHalfMin) * unit01(hash2(gx, gz, seed ^ 0xe555));
+          const y = sp.floorY + p.height * (0.1 + 0.75 * unit01(hash2(gx, gz, seed ^ 0xe666)));
+          box(sp.cx + side * (sp.hw + hx * 0.4), y, wz, hx, hy, hz);
+        }
+      }
+    }
+    if (p.beamProb > 0) {
+      const sB = p.beamSpacing;
+      const [gz0, gz1] = cellRange(z0, z1, reach, sB);
+      for (let gz = gz0; gz <= gz1; gz++) {
+        if (unit01(hash1(gz, seed ^ 0xf111)) > p.beamProb) continue;
+        const bz = (gz + 0.2 + 0.6 * unit01(hash1(gz, seed ^ 0xf222))) * sB;
+        spine(seed, bz, p, sp);
+        // Beams sit between the core tube's top and the ceiling clamp: flyable under, never through the core.
+        const lo = sp.coreY + p.coreRadius + p.beamHalf + 2;
+        const hi = sp.ceilY - 24;
+        if (hi <= lo) continue;
+        const y = lo + (hi - lo) * unit01(hash1(gz, seed ^ 0xf333));
+        box(sp.cx, y, bz, sp.hw * 1.3, p.beamHalf, p.beamHalf);
+      }
+    }
+  }
   if (p.tunnelProb > 0) {
     const s = p.tunnelSpacing;
     const reach = p.tunnelLenMax + p.tunnelRMax + FEATURE_CLAMP;
@@ -364,6 +463,15 @@ export function featuresSD(seed: number, x: number, y: number, z: number, list: 
       sd = d0 - bulge;
     } else if (f.kind === FEATURE_GATE) {
       sd = gateSD(f, dx, y - f.y, dz);
+    } else if (f.kind === FEATURE_BOX) {
+      const qx = Math.abs(dx) - f.r + 1;
+      const qy = Math.abs(y - f.y) - f.big + 1;
+      const qz = Math.abs(dz) - f.big2 + 1;
+      const ox = qx > 0 ? qx : 0;
+      const oy = qy > 0 ? qy : 0;
+      const oz = qz > 0 ? qz : 0;
+      const inside = Math.max(qx, Math.max(qy, qz));
+      sd = Math.sqrt(ox * ox + oy * oy + oz * oz) + (inside < 0 ? inside : 0) - 1;
     } else if (f.kind === FEATURE_MESA) {
       // Rounded box: half extents r (x), big (y, from the base), big2 (z); rounding 3 u.
       const qx = Math.abs(dx) - f.r + 3;

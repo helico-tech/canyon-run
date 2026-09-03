@@ -24,6 +24,8 @@ export interface FieldParams {
   profileOverhang: number;
   /** 0 = slot cross-section, 1 = elliptic tube (caves). */
   tubeness: number;
+  /** 1 = no rock roof (open to the sky); the sim's ceiling clamp still applies. */
+  roofOpen: number;
   /** Anisotropic spikes hanging from the ceiling / rising from the floor (0 disables). */
   stalactiteAmp: number;
   stalagmiteAmp: number;
@@ -77,6 +79,20 @@ export interface FieldParams {
   crystalRMax: number;
   crystalHMin: number;
   crystalHMax: number;
+  /** Boxes (greebles, towers, beams) for artificial biomes; probability 0 disables. */
+  boxFloorSpacing: number;
+  boxFloorProb: number;
+  boxWallSpacing: number;
+  boxWallProb: number;
+  boxHalfMin: number;
+  boxHalfMax: number;
+  boxHeightMin: number;
+  boxHeightMax: number;
+  towerSpacing: number;
+  towerProb: number;
+  beamSpacing: number;
+  beamProb: number;
+  beamHalf: number;
   /** Carved side tunnels (dead ends) on z cells; probability 0 disables. */
   tunnelSpacing: number;
   tunnelProb: number;
@@ -103,6 +119,7 @@ export const CANYON: FieldParams = Object.freeze({
   profileLip: 0.3,
   profileOverhang: 0.6,
   tubeness: 0,
+  roofOpen: 0,
   stalactiteAmp: 0,
   stalagmiteAmp: 0,
   spikeLen: 8,
@@ -149,6 +166,19 @@ export const CANYON: FieldParams = Object.freeze({
   crystalRMax: 5,
   crystalHMin: 8,
   crystalHMax: 30,
+  boxFloorSpacing: 22,
+  boxFloorProb: 0,
+  boxWallSpacing: 18,
+  boxWallProb: 0,
+  boxHalfMin: 3,
+  boxHalfMax: 7,
+  boxHeightMin: 2,
+  boxHeightMax: 6,
+  towerSpacing: 60,
+  towerProb: 0,
+  beamSpacing: 160,
+  beamProb: 0,
+  beamHalf: 2.5,
   tunnelSpacing: 200,
   tunnelProb: 0,
   tunnelRMin: 8,
