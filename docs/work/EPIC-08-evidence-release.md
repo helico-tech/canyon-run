@@ -1,6 +1,6 @@
 ---
 id: EPIC-08
-status: todo
+status: in-progress
 ---
 # EPIC-08 Evidence and release
 

@@ -54,3 +54,10 @@ opens the package's bug tracker.
 
 The pre-push hook (`scripts/git-hooks/pre-push`, installed by `pnpm install`
 through `prepare`) runs `pnpm check` and `pnpm docs:validate`.
+
+## Continuous integration and Pages
+
+`.github/workflows/ci.yml` runs `pnpm check`, docs validation and the
+Playwright suite on pushes and pull requests. `.github/workflows/pages.yml`
+builds `dist/` and deploys it to GitHub Pages on every push to `main`
+(Vite `base: './'` keeps assets relative, so the project-pages subpath works).
