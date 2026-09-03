@@ -74,8 +74,13 @@ test('settings persist and wrong-shaped or out-of-range values fall back to the 
   const mem = memory();
   const s = new Storage(mem);
   expect(s.settings()).toEqual(DEFAULT_SETTINGS);
-  s.setSettings({ sensitivity: 1.7, invertY: true, throttleWS: false });
-  expect(s.settings()).toEqual({ sensitivity: 1.7, invertY: true, throttleWS: false });
+  s.setSettings({ sensitivity: 1.7, invertY: true, throttleWS: false, sound: false });
+  expect(s.settings()).toEqual({
+    sensitivity: 1.7,
+    invertY: true,
+    throttleWS: false,
+    sound: false,
+  });
   mem.map.set('canyon.settings', '{"sensitivity":9,"invertY":"yes"}');
   expect(s.settings()).toEqual(DEFAULT_SETTINGS);
   mem.map.set('canyon.settings', '[]');

@@ -25,3 +25,14 @@ Ticks keep counting while the plane is dead, so the timeline is sim-driven:
 | 600 ms | the run-over panel (CR-0014) |
 
 Near-miss callouts are in CR-0024.
+
+## Audio (CR-0042)
+
+Procedural WebAudio, no assets (`src/app/audio.ts`): two detuned sawtooths
+through a lowpass for the engine (55–110 Hz and 200–900 Hz cutoff by speed
+factor), looped white noise through a bandpass for wind (400–2500 Hz centre,
+gain `0.6·t²` plus a proximity term), a 60 ms sine blip per score event (a
+fifth higher for SO CLOSE and GATE, an octave for DODGED) and a 60 Hz thud on
+death. The context is created outside test mode only, resumed on the click
+that requests pointer lock, and silenced by the sound setting. Nothing feeds
+back into the sim.

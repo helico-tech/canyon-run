@@ -8,6 +8,8 @@ export interface Settings {
   invertY: boolean;
   /** W/S drive the throttle and Shift/Ctrl pitch, instead of the reverse. */
   throttleWS: boolean;
+  /** Procedural audio on. */
+  sound: boolean;
 }
 
 export const SENSITIVITY_MIN = 0.5;
@@ -17,6 +19,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   sensitivity: 1,
   invertY: false,
   throttleWS: false,
+  sound: true,
 });
 
 export function isSettings(v: unknown): v is Settings {
@@ -27,6 +30,7 @@ export function isSettings(v: unknown): v is Settings {
     o.sensitivity >= SENSITIVITY_MIN &&
     o.sensitivity <= SENSITIVITY_MAX &&
     typeof o.invertY === 'boolean' &&
-    typeof o.throttleWS === 'boolean'
+    typeof o.throttleWS === 'boolean' &&
+    typeof o.sound === 'boolean'
   );
 }

@@ -4,6 +4,7 @@ import { SIM_VERSION } from '../sim/version.ts';
 import { Game } from './game.ts';
 import { createHud } from './hud.ts';
 import { HudProbe } from './hudProbe.ts';
+import { createAudio } from './audio.ts';
 import { InputSampler } from './inputSampler.ts';
 import { advance } from './loop.ts';
 import { isLocked, requestLock } from './pointerLock.ts';
@@ -92,10 +93,18 @@ if (test) {
   const settings = storage.settings();
   const sampler = new InputSampler(settings);
   screens.setSettings(settings);
+  const audio = typeof AudioContext === 'undefined' ? null : createAudio(new AudioContext());
+  audio?.setMuted(!settings.sound);
   screens.onSettings((s) => {
     Object.assign(settings, s);
     storage.setSettings(settings);
+    audio?.setMuted(!settings.sound);
   });
+  const renderHud = game.onRender;
+  game.onRender = (state, alpha) => {
+    renderHud?.(state, alpha);
+    audio?.update(state);
+  };
   game.setSource(() => sampler.take());
   if (hint) hint.hidden = true;
 
@@ -106,6 +115,7 @@ if (test) {
     sampler.enabled = true;
     if (game.phase === 'idle' && s === game.seed && mode === game.biomeMode) game.start();
     else game.restart(s, mode);
+    audio?.resume();
     requestLock(canvas);
   };
   screens.setBiomes(biomeModes().map((m) => m.name));

@@ -48,8 +48,8 @@ hoodoo desert, floating archipelago, and a Death-Star-style trench run.
 | N | new canyon |
 | Esc | release the mouse |
 
-The start screen also has settings: mouse sensitivity (0.5–2×), invert Y and a
-W/S throttle map. They are applied before the sim sees input, so replays stay
+The start screen also has settings: mouse sensitivity (0.5–2×), invert Y, a
+W/S throttle map and a sound toggle (procedural engine, wind and callout blips). They are applied before the sim sees input, so replays stay
 exact whatever the recorder's settings were.
 
 Score accrues every tick at a rate that grows with the square of your speed

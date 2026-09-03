@@ -47,6 +47,7 @@ export function createScreens(parent: HTMLElement): Screens {
         <label>sensitivity <input class="sens" type="range" min="0.5" max="2" step="0.1" /> <span class="sensv">1.0</span></label>
         <label><input class="invert" type="checkbox" /> invert Y</label>
         <label><input class="thrws" type="checkbox" /> W/S throttle</label>
+        <label><input class="sound" type="checkbox" /> sound</label>
       </div>
       <p class="best"></p>
       <ul class="keys">
@@ -80,13 +81,15 @@ export function createScreens(parent: HTMLElement): Screens {
   const sensValue = start.querySelector<HTMLElement>('.sensv')!;
   const invert = start.querySelector<HTMLInputElement>('.invert')!;
   const thrws = start.querySelector<HTMLInputElement>('.thrws')!;
+  const sound = start.querySelector<HTMLInputElement>('.sound')!;
   let settingsHandler: ((s: Settings) => void) | null = null;
   const readSettings = (): Settings => ({
     sensitivity: Number(sens.value),
     invertY: invert.checked,
     throttleWS: thrws.checked,
+    sound: sound.checked,
   });
-  for (const input of [sens, invert, thrws]) {
+  for (const input of [sens, invert, thrws, sound]) {
     input.addEventListener('click', (e) => e.stopPropagation());
     input.addEventListener('keydown', (e) => e.stopPropagation());
     input.addEventListener('input', () => {
@@ -130,6 +133,7 @@ export function createScreens(parent: HTMLElement): Screens {
       sensValue.textContent = s.sensitivity.toFixed(1);
       invert.checked = s.invertY;
       thrws.checked = s.throttleWS;
+      sound.checked = s.sound;
     },
     onSettings(handler) {
       settingsHandler = handler;
