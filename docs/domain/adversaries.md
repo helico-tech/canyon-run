@@ -28,6 +28,7 @@ radius used by the fairness rules.
 | 5 | closing jaws | close as the plane approaches | either side of the core, gap ≥ `gapMin` |
 | 6 | sweeping spinning blade | sweep in x | beside the core only (never crossing) |
 | 7 | crystal iris | pulse (radius breathes) | on the core; closed it still clears the core before segment 4, later still fits the level hull |
+| 8 | geyser | erupt (rests in the floor, one eased burst per period) | rises to just below the core before segment 4, later to just below a 3 u lane at the top of the core; never faster than 0.9 u per tick |
 
 Motion is transcendental-free: triangle and swing waves, a 32-entry circle
 table, and an approach-driven law for jaws (the gap depends on the plane's
@@ -40,7 +41,7 @@ distance, not on time).
 | canyon | hoops, bouncing blocks | 260 | 0.8 |
 | cave | hoops | 240 | 0.8 |
 | crystal spires | spinning blades, irises, hoops | 260 | 0.8 |
-| lava rift | pistons (presses), jaws | 240 | 0.85 |
+| lava rift | geysers, pistons (presses), jaws | 240 | 0.85 |
 | hoodoo desert | bouncing blocks, orbiting shards | 220 | 0.85 |
 | floating archipelago | orbiting shards, hoops | 260 | 0.8 |
 | trench run | jaws, spinning blades | 200 | 0.9 |

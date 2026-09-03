@@ -35,6 +35,10 @@ export const MOTION_ORBIT = 4;
 export const MOTION_CLOSE = 5;
 /** Ring radius breathes between the closed opening `len2` and `len` (rings only). */
 export const MOTION_PULSE = 6;
+/** Rests in the floor, erupts once per period to just below a lane at the top of the core. */
+export const MOTION_ERUPT = 7;
+/** Geysers rise no faster than this (u per tick), under the audit's lateral bound. */
+export const ERUPT_MAX_STEP = 0.9;
 
 /** Archetype rows [shape, motion, spin turns per period]. Ids are stable: replays depend on them. */
 export const ARCHETYPES: ReadonlyArray<readonly [number, number, number]> = [
@@ -46,6 +50,7 @@ export const ARCHETYPES: ReadonlyArray<readonly [number, number, number]> = [
   [SHAPE_BOX, MOTION_CLOSE, 0], // 5 closing jaws
   [SHAPE_BLADE, MOTION_SWEEP_X, 1], // 6 sweeping, spinning blade
   [SHAPE_RING, MOTION_PULSE, 0], // 7 crystal iris
+  [SHAPE_BOX, MOTION_ERUPT, 0], // 8 geyser
 ];
 
 export const ADV_MAX = 32;
@@ -134,6 +139,17 @@ export function swing(u: number): number {
   return 2 * t * t * (3 - 2 * t) - 1;
 }
 
+/**
+ * Eruption envelope: 0 outside u ∈ [0.35, 0.65], a smoothstep-eased bump peaking
+ * at u = 0.5 (where the telegraph colour peaks too). Max slope 10 per period.
+ */
+export function erupt(u: number): number {
+  const v0 = (u - 0.35) / 0.3;
+  const v = v0 < 0 ? 0 : v0 > 1 ? 1 : v0;
+  const t = 1 - Math.abs(2 * v - 1);
+  return t * t * (3 - 2 * t);
+}
+
 /** 32 literal (cos, sin) pairs at 11.25° steps. */
 const CIRCLE = new Float64Array([
   1, 0, 0.98078528, 0.19509032, 0.92387953, 0.38268343, 0.83146961, 0.55557023, 0.70710678,
@@ -172,6 +188,7 @@ export function advPoseAt(st: Station, time: number, planeZ: number, out: AdvPos
     out.radius = st.len2 + (st.len - st.len2) * (0.5 + 0.5 * swing(u));
   else if (st.motion === MOTION_SWEEP_X) x += st.ax * swing(u);
   else if (st.motion === MOTION_SWEEP_Y) y += st.ay * swing(u);
+  else if (st.motion === MOTION_ERUPT) y += st.ay * erupt(u);
   else if (st.motion === MOTION_BOUNCE_X) x += st.ax * tri(u);
   else if (st.motion === MOTION_ORBIT) {
     circle(u, tmp2, 0);
@@ -353,6 +370,19 @@ export function decodeStation(
     const reach = len - r - C.ADV_HULL_R + (core - C.ADV_HULL_R) - 2;
     if (ax > reach) ax = reach < 0 ? 0 : reach;
     ay = 0;
+  } else if (motion === MOTION_ERUPT) {
+    // A geyser rests in the floor (1 u showing) and erupts to just below the core
+    // before ADV_CORE_FROM, later to just below a 3 u lane at the top of the core.
+    const rest = sp.floorY + 1 - r;
+    const lane = 2 * C.ADV_HULL_RY + 3;
+    const peak = keepCore ? sp.coreY - core - 2 - r : sp.coreY + core - lane - r;
+    if (peak - rest < 6) return false;
+    cy = rest;
+    ay = peak - rest;
+    ax = 0;
+    // The envelope's max slope is 10 per period: keep the rise under ERUPT_MAX_STEP.
+    const minPeriod = Math.ceil((10 * ay) / ERUPT_MAX_STEP);
+    if (period < minPeriod) period = minPeriod;
   } else if (motion === MOTION_ORBIT) {
     // Orbit around the core outside it: radius ≥ core + body + 2.
     if (need > halfX || need > halfY) return false;

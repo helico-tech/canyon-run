@@ -70,7 +70,7 @@ export const LAVA_BIOME: BiomeDef = Object.freeze<BiomeDef>({
   adversaries: {
     spacing: 240,
     prob: 0.85,
-    archetypes: [2, 5],
+    archetypes: [8, 2, 5],
     rMin: 3,
     rMax: 5,
     lenMin: 6,

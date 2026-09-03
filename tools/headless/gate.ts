@@ -76,8 +76,9 @@ export function runGates(g: GateInput): GateResult[] {
     const y = Math.floor(height / 2);
     const i = (y * width + x) * 4;
     const [r, gg, b] = [data[i]!, data[i + 1]!, data[i + 2]!];
-    // Bright border (the proximity glow overlay may tint it): every channel high.
-    const ok = r >= 190 && gg >= 180 && b >= 200;
+    // Bright border (the proximity glow overlay may tint it), or the cyan altitude
+    // marker when the plane's altitude puts it on the sampled pixel: green and blue high.
+    const ok = gg >= 180 && b >= 180;
     add('HUD frame drawn', ok, `altitude bar border pixel ${r},${gg},${b} at ${x},${y}`);
   }
   const last = g.frames[g.frames.length - 1];

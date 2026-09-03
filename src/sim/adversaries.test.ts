@@ -7,6 +7,8 @@ import type { AdversaryParams } from '../terrain/params.ts';
 import {
   MOTION_CLOSE,
   MOTION_PULSE,
+  MOTION_ERUPT,
+  ERUPT_MAX_STEP,
   SHAPE_RING,
   advPoseAt,
   circle,
@@ -33,7 +35,7 @@ afterEach(() => {
 const ARENA: AdversaryParams = {
   spacing: 150,
   prob: 1,
-  archetypes: [0, 1, 2, 3, 4, 5, 6, 7],
+  archetypes: [0, 1, 2, 3, 4, 5, 6, 7, 8],
   rMin: 2,
   rMax: 4,
   lenMin: 6,
@@ -243,6 +245,39 @@ test('an iris breathes between its closed and open radius and always leaves the 
       expect(hi).toBeLessThanOrEqual(st.len + 1e-9);
       expect(st.len - hi).toBeLessThan(0.05);
       if (st.seg < C.ADV_CORE_FROM) expect(st.len2 - st.r).toBeGreaterThanOrEqual(st.core + 2);
+      checked++;
+    }
+  }
+  expect(checked).toBeGreaterThan(3);
+});
+
+test('a geyser rests in the floor, erupts below the lane at the top of the core, and rises slowly', () => {
+  arenaOnly();
+  const out = Array.from({ length: 96 }, createStation);
+  const pose = createPose();
+  let checked = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    const n = gatherStations(seed, 0, 0, 9000, out);
+    for (let i = 0; i < n; i++) {
+      const st = out[i]!;
+      if (st.motion !== MOTION_ERUPT) continue;
+      const sp = spineAt(seed, st.z);
+      expect(st.cy + st.r).toBeCloseTo(sp.floorY + 1, 6);
+      const lane = 2 * C.ADV_HULL_RY + 3;
+      const top = st.cy + st.ay + st.r;
+      if (st.seg < C.ADV_CORE_FROM) expect(top).toBeLessThanOrEqual(sp.coreY - st.core - 2 + 1e-9);
+      else expect(top).toBeLessThanOrEqual(sp.coreY + st.core - lane + 1e-9);
+      let prevY = NaN;
+      let maxStep = 0;
+      let atRest = 0;
+      for (let t = 0; t < st.period; t++) {
+        advPoseAt(st, t, st.z, pose);
+        if (pose.y === st.cy) atRest++;
+        if (t > 0) maxStep = Math.max(maxStep, Math.abs(pose.y - prevY));
+        prevY = pose.y;
+      }
+      expect(maxStep).toBeLessThanOrEqual(ERUPT_MAX_STEP + 1e-9);
+      expect(atRest / st.period).toBeGreaterThan(0.6);
       checked++;
     }
   }
