@@ -1,7 +1,7 @@
 ---
 id: CR-0007
 epic: EPIC-03
-status: todo
+status: done
 ---
 # CR-0007 Flight model, collision, scoring
 
@@ -17,3 +17,10 @@ status: todo
 - Throughput logged (target ≥ 200 k ticks/s in Node; not asserted).
 
 **Verification.** `pnpm check`.
+
+**Delivered notes.** The scripted pilot moved here from CR-0008 because a
+straight flight cannot survive (the spine wanders 80 u); tests fly with the
+pilot instead. Ghost mode on `StepScratch` disables hull collision for
+orientation-only tests. The ceiling is clamped against the spine at the tick's
+end z, so the invariant holds exactly. `SimState.proximity` was added to the
+checksum.

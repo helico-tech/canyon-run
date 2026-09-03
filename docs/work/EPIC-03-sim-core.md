@@ -1,6 +1,6 @@
 ---
 id: EPIC-03
-status: todo
+status: in-progress
 ---
 # EPIC-03 Simulation core
 
