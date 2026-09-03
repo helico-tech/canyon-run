@@ -19,6 +19,8 @@ export const FEATURE_ARCH = 2;
 export const FEATURE_TUNNEL = 3;
 /** Tilted hexagonal prism (rock), coloured as crystal by the mesher. */
 export const FEATURE_CRYSTAL = 4;
+/** Rounded box on the floor (rock). */
+export const FEATURE_MESA = 5;
 
 /** 8 tilt angles from -35° to +35° as (cos, sin) literals. */
 const TILT = new Float64Array([
@@ -77,6 +79,9 @@ function archReach(p: FieldParams): number {
 function crystalReach(p: FieldParams): number {
   return p.crystalHMax + p.crystalRMax + FEATURE_CLAMP;
 }
+function mesaReach(p: FieldParams): number {
+  return p.mesaSizeMax + FEATURE_CLAMP;
+}
 
 /** Collects every feature whose reach can touch the box [x0,x1]×[z0,z1]. */
 export function gatherFeatures(
@@ -105,7 +110,9 @@ export function gatherFeatures(
         const r = p.pillarRadius * (0.7 + 0.6 * unit01(hash2(gx, gz, seed ^ 0x5444)));
         const fr = r * 1.25 + FEATURE_CLAMP;
         if (px + fr < x0 || px - fr > x1 || pz + fr < z0 || pz - fr > z1) continue;
-        out.push(feature(FEATURE_PILLAR, px, 0, pz, r, 0, fr));
+        const pf = feature(FEATURE_PILLAR, px, 0, pz, r, 0, fr);
+        pf.big2 = p.pillarStepLen;
+        out.push(pf);
       }
     }
   }
@@ -186,6 +193,29 @@ export function gatherFeatures(
       }
     }
   }
+  if (p.mesaProb > 0) {
+    const reach = mesaReach(p);
+    const s = p.mesaSpacing;
+    const gx0 = Math.floor((x0 - reach) / s);
+    const gx1 = Math.floor((x1 + reach) / s);
+    const gz0 = Math.floor((z0 - reach) / s);
+    const gz1 = Math.floor((z1 + reach) / s);
+    for (let gz = gz0; gz <= gz1; gz++) {
+      for (let gx = gx0; gx <= gx1; gx++) {
+        if (unit01(hash2(gx, gz, seed ^ 0xa111)) > p.mesaProb) continue;
+        const mx = (gx + 0.2 + 0.6 * unit01(hash2(gx, gz, seed ^ 0xa222))) * s;
+        const mz = (gz + 0.2 + 0.6 * unit01(hash2(gx, gz, seed ^ 0xa333))) * s;
+        const size =
+          p.mesaSizeMin + (p.mesaSizeMax - p.mesaSizeMin) * unit01(hash2(gx, gz, seed ^ 0xa444));
+        const fr = size + FEATURE_CLAMP;
+        if (mx + fr < x0 || mx - fr > x1 || mz + fr < z0 || mz - fr > z1) continue;
+        spine(seed, mz, p, sp);
+        const f = feature(FEATURE_MESA, mx, sp.floorY - 6, mz, size * 0.5, p.mesaHeight, fr);
+        f.big2 = size * (0.5 + 0.4 * unit01(hash2(gx, gz, seed ^ 0xa555))) * 0.5; // half depth
+        out.push(f);
+      }
+    }
+  }
   if (p.tunnelProb > 0) {
     const s = p.tunnelSpacing;
     const reach = p.tunnelLenMax + p.tunnelRMax + FEATURE_CLAMP;
@@ -246,10 +276,11 @@ export function featuresSD(seed: number, x: number, y: number, z: number, list: 
     if (dx > f.reach || dx < -f.reach || dz > f.reach || dz < -f.reach) continue;
     let sd: number;
     if (f.kind === FEATURE_PILLAR) {
-      // The bulge is within ±25 % of r; skip the noise when it cannot beat `best` (exact).
+      // The bulge is within ±25 % of r (±55 % with steps); skip the noise when it cannot beat `best` (exact).
       const d0 = Math.sqrt(dx * dx + dz * dz) - f.r;
-      if (d0 - 0.25 * f.r >= best) continue;
-      const bulge = 1 + 0.25 * noise3(f.x * 0.05, y * 0.08, f.z * 0.05, seed ^ 0x5555);
+      if (d0 - 0.55 * f.r >= best) continue;
+      let bulge = 1 + 0.25 * noise3(f.x * 0.05, y * 0.08, f.z * 0.05, seed ^ 0x5555);
+      if (f.big2 > 0) bulge += 0.3 * (Math.floor(y / f.big2) & 1);
       sd = d0 - f.r * (bulge - 1);
     } else if (f.kind === FEATURE_BOULDER) {
       const dy = y - f.y;
@@ -259,6 +290,16 @@ export function featuresSD(seed: number, x: number, y: number, z: number, list: 
       sd = d0 - f.r * (bulge - 1);
     } else if (f.kind === FEATURE_CRYSTAL) {
       sd = crystalSD(f, dx, y - f.y, dz);
+    } else if (f.kind === FEATURE_MESA) {
+      // Rounded box: half extents r (x), big (y, from the base), big2 (z); rounding 3 u.
+      const qx = Math.abs(dx) - f.r + 3;
+      const qy = Math.abs(y - f.y - f.big * 0.5) - f.big * 0.5 + 3;
+      const qz = Math.abs(dz) - f.big2 + 3;
+      const ox = qx > 0 ? qx : 0;
+      const oy = qy > 0 ? qy : 0;
+      const oz = qz > 0 ? qz : 0;
+      const inside = Math.max(qx, Math.max(qy, qz));
+      sd = Math.sqrt(ox * ox + oy * oy + oz * oz) + (inside < 0 ? inside : 0) - 3;
     } else {
       const dy = y - f.y;
       const ring = Math.sqrt(dx * dx + dy * dy) - f.big;

@@ -1,7 +1,7 @@
 ---
 id: CR-0020
 epic: EPIC-06
-status: todo
+status: done
 ---
 # CR-0020 Biome: hoodoo-desert
 
@@ -16,3 +16,8 @@ status: todo
 - Existing goldens still pass (canyon segments unchanged).
 
 **Verification.** `pnpm check`, headless sheet, goldens.
+
+**Delivered notes.** Two feature additions: pillars gain `pillarStepLen`
+(radius steps ±30 % per band, giving hoodoos) and a rounded-box mesa feature
+on 2D cells. Goldens regenerated (SIM_VERSION 0.1.5). Evidence in
+`docs/evidence/2026-09-03-CR-0020/`.

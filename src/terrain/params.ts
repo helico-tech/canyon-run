@@ -46,6 +46,14 @@ export interface FieldParams {
   pillarSpacing: number;
   pillarProb: number;
   pillarRadius: number;
+  /** Hoodoos: pillar radius steps ±30 % every `pillarStepLen` u of height (0 = smooth). */
+  pillarStepLen: number;
+  /** Mesas: rounded boxes on 2D cells (probability 0 disables). */
+  mesaSpacing: number;
+  mesaProb: number;
+  mesaSizeMin: number;
+  mesaSizeMax: number;
+  mesaHeight: number;
   boulderSpacing: number;
   boulderProb: number;
   boulderRMin: number;
@@ -108,6 +116,12 @@ export const CANYON: FieldParams = Object.freeze({
   pillarSpacing: 56,
   pillarProb: 0.35,
   pillarRadius: 5,
+  pillarStepLen: 0,
+  mesaSpacing: 96,
+  mesaProb: 0,
+  mesaSizeMin: 20,
+  mesaSizeMax: 40,
+  mesaHeight: 30,
   boulderSpacing: 20,
   boulderProb: 0.25,
   boulderRMin: 2,

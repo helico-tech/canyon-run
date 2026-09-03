@@ -147,4 +147,5 @@ export function atmosphereAt(
 import { CAVE_BIOME } from './biomes/cave.ts';
 import { SPIRES_BIOME } from './biomes/spires.ts';
 import { LAVA_BIOME } from './biomes/lava.ts';
-SPECIALS.push(CAVE_BIOME, SPIRES_BIOME, LAVA_BIOME);
+import { HOODOO_BIOME } from './biomes/hoodoo.ts';
+SPECIALS.push(CAVE_BIOME, SPIRES_BIOME, LAVA_BIOME, HOODOO_BIOME);
