@@ -146,4 +146,5 @@ export function atmosphereAt(
 // Registration (biome files import only types from here, so this is not a cycle at runtime).
 import { CAVE_BIOME } from './biomes/cave.ts';
 import { SPIRES_BIOME } from './biomes/spires.ts';
-SPECIALS.push(CAVE_BIOME, SPIRES_BIOME);
+import { LAVA_BIOME } from './biomes/lava.ts';
+SPECIALS.push(CAVE_BIOME, SPIRES_BIOME, LAVA_BIOME);
